@@ -1,0 +1,64 @@
+{
+  "analyzerId": "cni_agreement_analyzer",
+  "description": "Extracts key fields from Commercial & Industrial (CNI) credit agreements including facility details, pricing, and borrower information.",
+  "baseAnalyzerId": "prebuilt-document",
+  "models": {
+    "completion": "gpt-4.1",
+    "embedding": "text-embedding-3-large"
+  },
+  "config": {
+    "returnDetails": true,
+    "enableOcr": true,
+    "enableLayout": true,
+    "estimateFieldSourceAndConfidence": true
+  },
+  "fieldSchema": {
+    "fields": {
+      "Agreement_Date": {
+        "type": "date",
+        "method": "extract",
+        "description": "Identify the Agreement Date, also known as the Closing Date. The date is often found within first 20 pages of the document. Also check the definition of closing date in agreement."
+      },
+      "Borrower_Name": {
+        "type": "string",
+        "method": "extract",
+        "description": "Identify the borrower(s) mentioned in the agreement. Search in first 10 pages of credit agreement in introductory paragraphs. Also check for co-borrower or subsidiary borrower names."
+      },
+      "Pricing_Rules_Available": {
+        "type": "string",
+        "method": "extract",
+        "description": "Identify all interest/pricing options in the agreement. Extract information from sections and definitions that explain the interest options meaning and their types."
+      },
+      "Minimum_Drawdown_Amount": {
+        "type": "string",
+        "method": "extract",
+        "description": "Identify an amount in the agreement that specifies the minimum borrowing the borrower can take under the available pricing options/interest options. Any borrowings by the borrower shall not be less than such amount."
+      },
+      "Minimum_Amount_Multiples": {
+        "type": "string",
+        "method": "extract",
+        "description": "Extract the minimum integral multiples of borrowing amounts for each pricing option or interest option specified in the agreement."
+      },
+      "Maximum_Loans_Outstanding": {
+        "type": "string",
+        "method": "extract",
+        "description": "Identify and extract the maximum number of loans that can be outstanding simultaneously under each type of interest option/pricing options."
+      },
+      "Commitment_Fee_Payment": {
+        "type": "string",
+        "method": "extract",
+        "description": "What are the types of fees given in credit agreement which are calculated on applicable rate and is applied to a variable base balance. Such fee is of accrual nature that accrue over time."
+      },
+      "Facility_Type": {
+        "type": "string",
+        "method": "extract",
+        "description": "Extract all information related to commitments, credits, loans and advances and facility types. Look for different types of commitments or loans or limits agreed upon between the lenders and the borrowers. Check the sections, schedules, exhibits, definitions and tables that contains commitment meaning and information related to commitment types."
+      },
+      "Facility_Amount": {
+        "type": "string",
+        "method": "extract",
+        "description": "Identify the type of facility/commitment/credit or loans along with amount mentioned against each lender entity. Check section, definition, schedule, exhibit or any table given in agreement for facility commitment amounts."
+      }
+    }
+  }
+}

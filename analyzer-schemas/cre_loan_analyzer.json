@@ -1,0 +1,94 @@
+{
+  "analyzerId": "cre_loan_analyzer",
+  "description": "Extracts key fields from Commercial Real Estate (CRE) loan agreements including loan terms, property details, and financial parameters.",
+  "baseAnalyzerId": "prebuilt-document",
+  "models": {
+    "completion": "gpt-4.1",
+    "embedding": "text-embedding-3-large"
+  },
+  "config": {
+    "returnDetails": true,
+    "enableOcr": true,
+    "enableLayout": true,
+    "estimateFieldSourceAndConfidence": true
+  },
+  "fieldSchema": {
+    "fields": {
+      "Relationship_Name": {
+        "type": "string",
+        "method": "extract",
+        "description": "Name of the lending relationship or borrower group as referenced in the loan package or agreement header. Typically used to identify the primary entity associated with the loan relationship."
+      },
+      "Commitment_Amount": {
+        "type": "number",
+        "method": "extract",
+        "description": "Total loan commitment amount as defined in the agreement. Look for terms such as 'Loan Commitment', 'Committed Amount', 'Principal Sum', or 'Loan Amount'. Return only the numeric value."
+      },
+      "Current_Principal_Balance": {
+        "type": "number",
+        "method": "extract",
+        "description": "Outstanding principal balance of the loan as of the reporting or effective date. Typically found in servicing sections, payment calculations, or payoff provisions. Return numeric value only."
+      },
+      "Original_Principal_Balance": {
+        "type": "number",
+        "method": "extract",
+        "description": "Original loan principal amount funded at closing. Usually referenced as 'Original Principal Amount', 'Original Loan Amount', or 'Initial Principal Balance'. Return numeric value only."
+      },
+      "Interest_Rate": {
+        "type": "string",
+        "method": "extract",
+        "description": "Interest rate applicable to the loan. Extract as stated - fixed or variable reference - typically labeled as 'Interest Rate', 'Applicable Rate', 'Note Rate', or 'Contract Rate'. Return percentage or reference."
+      },
+      "Interest_Basis_Code": {
+        "type": "string",
+        "method": "extract",
+        "description": "Day-count convention used for interest accrual, such as '30/360', 'Actual/360', or 'Actual/365'. Usually appears in interest calculation sections. Return only the convention format."
+      },
+      "Maturity_Date": {
+        "type": "date",
+        "method": "extract",
+        "description": "The date on which all outstanding indebtedness becomes due. Identified via phrases such as 'Maturity Date', 'Final Payment Date', or 'Loan Termination Date'. Return the date as stated."
+      },
+      "Original_Loan_Date": {
+        "type": "date",
+        "method": "extract",
+        "description": "Date on which the loan was originally executed or closed. Look for terms such as 'Closing Date', 'Origination Date', 'Date of Execution'. Return the explicit date."
+      },
+      "First_Payment_Due_Date": {
+        "type": "string",
+        "method": "extract",
+        "description": "Date on which the first scheduled payment is due. Identified in payment schedule sections using terms such as 'first installment due', 'initial payment date', or 'commencing on'. Return the date only."
+      },
+      "Payment_Frequency": {
+        "type": "string",
+        "method": "extract",
+        "description": "Frequency at which regular loan payments are required - e.g., monthly, quarterly, annually. Extract a single frequency term only."
+      },
+      "Accrual_Start_Date": {
+        "type": "string",
+        "method": "extract",
+        "description": "The date on which interest begins accruing. Look for terms such as 'Interest shall begin to accrue on', 'Accrual Start Date'. Return the date as written."
+      },
+      "Loan_Type": {
+        "type": "string",
+        "method": "extract",
+        "description": "Type of loan as defined - e.g., permanent loan, construction loan, bridge loan, mezzanine loan. Found in definitions or opening recitals. Return the label exactly as used in the agreement."
+      },
+      "Property_Address": {
+        "type": "string",
+        "method": "extract",
+        "description": "Full physical address of the secured property. Extract the complete address as written, including street, city, state, and ZIP code."
+      },
+      "Property_Type": {
+        "type": "string",
+        "method": "extract",
+        "description": "Type of real estate securing the loan - e.g., multifamily, office, retail, industrial, hospitality. Typically found in definitions, collateral descriptions, or appraisal exhibits."
+      },
+      "Reserve_Monthly_Constant": {
+        "type": "string",
+        "method": "extract",
+        "description": "Monthly amount required to be deposited into any reserve account (e.g., tax reserve, insurance reserve, capital reserve), when explicitly stated as a recurring monthly constant."
+      }
+    }
+  }
+}

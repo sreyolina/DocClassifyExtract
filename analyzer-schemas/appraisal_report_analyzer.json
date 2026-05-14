@@ -1,0 +1,129 @@
+{
+  "analyzerId": "appraisal_report_analyzer",
+  "description": "Extracts key fields from Commercial Real Estate appraisal reports including property details, valuation approaches, and appraiser information.",
+  "baseAnalyzerId": "prebuilt-document",
+  "models": {
+    "completion": "gpt-4.1",
+    "embedding": "text-embedding-3-large"
+  },
+  "config": {
+    "returnDetails": true,
+    "enableOcr": true,
+    "enableLayout": true,
+    "estimateFieldSourceAndConfidence": true
+  },
+  "fieldSchema": {
+    "fields": {
+      "Date_Of_Valuation": {
+        "type": "date",
+        "method": "extract",
+        "description": "Date of the valuation or appraisal. Usually found on the cover page or in the preamble."
+      },
+      "Subject_Property": {
+        "type": "string",
+        "method": "extract",
+        "description": "Name or description of the subject property being appraised."
+      },
+      "Property_Address": {
+        "type": "string",
+        "method": "extract",
+        "description": "Full physical address of the property being appraised, including street, city, state, and ZIP code."
+      },
+      "Client_Name": {
+        "type": "string",
+        "method": "extract",
+        "description": "Name of the client who commissioned the appraisal report."
+      },
+      "Appraiser_Name_And_Certification": {
+        "type": "string",
+        "method": "extract",
+        "description": "Appraiser's name and certification/license details as stated in the report."
+      },
+      "Property_Type_And_Location": {
+        "type": "string",
+        "method": "extract",
+        "description": "Type of property (e.g., office, retail, multifamily, industrial) and its general location description."
+      },
+      "Final_Value_Conclusion": {
+        "type": "string",
+        "method": "extract",
+        "description": "The final appraised value or value conclusion stated in the report. Look for 'Market Value', 'As-Is Value', or 'Final Value Opinion'."
+      },
+      "Effective_Date_Of_Appraisal": {
+        "type": "date",
+        "method": "extract",
+        "description": "The effective date of the appraisal, which may differ from the report date. Look for 'Effective Date', 'Date of Value', or 'Valuation Date'."
+      },
+      "Legal_Description": {
+        "type": "string",
+        "method": "extract",
+        "description": "Legal description of the property including lot, block, subdivision, or metes and bounds reference."
+      },
+      "Parcel_Number": {
+        "type": "string",
+        "method": "extract",
+        "description": "Tax parcel number or assessor's parcel number (APN) for the subject property."
+      },
+      "Ownership_History": {
+        "type": "string",
+        "method": "extract",
+        "description": "Recent ownership and sales history of the property, typically covering the last 3-5 years."
+      },
+      "Appraisal_Purpose": {
+        "type": "string",
+        "method": "extract",
+        "description": "Stated purpose of the appraisal (e.g., mortgage lending, estate planning, litigation support)."
+      },
+      "Current_Zoning_Classification": {
+        "type": "string",
+        "method": "extract",
+        "description": "Current zoning classification of the property (e.g., C-2 Commercial, R-1 Residential, M-1 Industrial)."
+      },
+      "Lot_Size": {
+        "type": "string",
+        "method": "extract",
+        "description": "Lot size, shape, and topography of the subject property. Include acreage or square footage as stated."
+      },
+      "Flood_Zone": {
+        "type": "string",
+        "method": "extract",
+        "description": "Flood zone designation and any environmental considerations noted in the report."
+      },
+      "Building_Size_And_Construction": {
+        "type": "string",
+        "method": "extract",
+        "description": "Building size (gross/net square footage), layout, number of stories, and construction type/materials."
+      },
+      "Highest_And_Best_Use": {
+        "type": "string",
+        "method": "extract",
+        "description": "Highest and best use conclusion for the property, both as vacant and as improved."
+      },
+      "Sales_Comparison_Value": {
+        "type": "string",
+        "method": "generate",
+        "description": "Generate the value indication from the Sales Comparison Approach. Compare recent sales of similar properties mentioned in the report, summarize the comparable sales used, adjustments made, and the final indicated value from this approach."
+      },
+      "Direct_Capitalization_Value": {
+        "type": "string",
+        "method": "generate",
+        "description": "Generate the value indication from the Direct Capitalization method (NOI divided by Cap Rate). Extract the Net Operating Income, the capitalization rate used, and calculate or summarize the resulting value indication from this approach."
+      },
+      "DCF_Analysis_Value": {
+        "type": "string",
+        "method": "generate",
+        "description": "Generate the value indication from the Discounted Cash Flow (DCF) analysis. Summarize the projection period, discount rate, terminal cap rate, and the resulting present value conclusion from this approach."
+      },
+      "Cost_Approach_Value": {
+        "type": "string",
+        "method": "generate",
+        "description": "Generate the value indication from the Cost Approach. Summarize the land value, replacement/reproduction cost new, applicable depreciation (physical, functional, external), and the resulting value indication (Land value + Replacement cost - Depreciation)."
+      },
+      "USPAP_Compliance": {
+        "type": "string",
+        "method": "extract",
+        "description": "Statement of compliance with Uniform Standards of Professional Appraisal Practice (USPAP)."
+      }
+    }
+  }
+}
