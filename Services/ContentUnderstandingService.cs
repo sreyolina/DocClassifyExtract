@@ -39,7 +39,7 @@ public class ContentUnderstandingService : IContentUnderstandingService
 {
     private const string ApiVersion = "2025-05-01-preview";
     private const string ClassifierApiVersion = "2025-11-01";
-    private const string ClassifierId = "doc_classifier_cre_cni_valuation";
+    private const string ClassifierId = "doc_classifier_cre_cni_valuation_v2_nonsegmented";
     private const int DefaultTimeoutSeconds = 300;
     private const int PollingIntervalSeconds = 2;
 
@@ -203,7 +203,7 @@ public class ContentUnderstandingService : IContentUnderstandingService
             ["config"] = new JsonObject
             {
                 ["returnDetails"] = true,
-                ["enableSegment"] = true,
+                ["enableSegment"] = false,
                 ["contentCategories"] = new JsonObject
                 {
                     ["Valuation"] = MakeCategory(
@@ -411,21 +411,25 @@ public class ContentUnderstandingService : IContentUnderstandingService
 
     private async Task<bool> AnalyzerIsReadyAsync(string analyzerId)
     {
-        ApplyHeaders();
-        var response = await _httpClient.GetAsync(
-            $"{_endpoint}/contentunderstanding/analyzers/{analyzerId}?api-version={ClassifierApiVersion}");
-
-        if (!response.IsSuccessStatusCode)
-            return false;
-
-        var json = JsonNode.Parse(await response.Content.ReadAsStringAsync());
+        var json = await GetAnalyzerAsync(analyzerId);
         var status = json?["status"]?.GetValue<string>();
-
         if (string.Equals(status, "Ready", StringComparison.OrdinalIgnoreCase))
             return true;
 
         _logger.LogWarning("Analyzer '{Id}' status is '{Status}' — will re-provision.", analyzerId, status);
         return false;
+    }
+
+    private async Task<JsonNode?> GetAnalyzerAsync(string analyzerId)
+    {
+        ApplyHeaders();
+        var response = await _httpClient.GetAsync(
+            $"{_endpoint}/contentunderstanding/analyzers/{analyzerId}?api-version={ClassifierApiVersion}");
+
+        if (!response.IsSuccessStatusCode)
+            return null;
+
+        return JsonNode.Parse(await response.Content.ReadAsStringAsync());
     }
 
     // ────────────────────────────────────────────────────────────────────────
