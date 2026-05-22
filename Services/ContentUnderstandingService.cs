@@ -370,7 +370,7 @@ public class ContentUnderstandingService : IContentUnderstandingService
     // Polling
     // ────────────────────────────────────────────────────────────────────────
 
-    private async Task<JsonNode> PollForCompletionAsync(string operationUrl, int maxWaitSeconds = 300)
+    private async Task<JsonNode> PollForCompletionAsync(string operationUrl, int maxWaitSeconds = 900)
     {
         var deadline = DateTime.UtcNow.AddSeconds(maxWaitSeconds);
         var delay = TimeSpan.FromSeconds(PollingIntervalSeconds);

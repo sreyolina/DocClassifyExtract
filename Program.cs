@@ -28,5 +28,6 @@ builder.Services.AddScoped<IDocumentFieldExtractor, DocumentFieldExtractor>();
 builder.Services.AddScoped<IFeatureRefService, FeatureRefService>();
 builder.Services.AddScoped<IDatabaseService, DatabaseService>();
 builder.Services.AddScoped<IBlobRoutingService, BlobRoutingService>();
+builder.Services.AddScoped<ISmeAssignmentService, SmeAssignmentService>();
 
 builder.Build().Run();

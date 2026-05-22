@@ -18,6 +18,7 @@ public class ClassifyAndExtractFunction
     private readonly IDatabaseService _databaseService;
     private readonly BlobServiceClient _blobServiceClient;
     private readonly IBlobRoutingService _blobRoutingService;
+    private readonly ISmeAssignmentService _smeAssignmentService;
 
     public ClassifyAndExtractFunction(
         ILogger<ClassifyAndExtractFunction> logger,
@@ -25,7 +26,8 @@ public class ClassifyAndExtractFunction
         IDocumentFieldExtractor fieldExtractor,
         IDatabaseService databaseService,
         BlobServiceClient blobServiceClient,
-        IBlobRoutingService blobRoutingService)
+        IBlobRoutingService blobRoutingService,
+        ISmeAssignmentService smeAssignmentService)
     {
         _logger = logger;
         _contentUnderstandingService = contentUnderstandingService;
@@ -33,6 +35,7 @@ public class ClassifyAndExtractFunction
         _databaseService = databaseService;
         _blobServiceClient = blobServiceClient;
         _blobRoutingService = blobRoutingService;
+        _smeAssignmentService = smeAssignmentService;
     }
 
     /// <summary>
@@ -173,6 +176,20 @@ public class ClassifyAndExtractFunction
 
             _logger.LogInformation("[{OperationId}] DB save in {Ms}ms: {Result}",
                 operationId, dbStopwatch.ElapsedMilliseconds, dbSuccess ? "Success" : "Failed");
+
+            // Step 6.5: Assign to SME if any field requires HITL review
+            if (allExtractedFields.Any(f => f.ReviewRequired))
+            {
+                var docTypeCategory = classification.Segments[0].Category;
+                var assignedSmeId = await _smeAssignmentService.AssignDocumentAsync(documentId, docTypeCategory);
+
+                if (assignedSmeId != null)
+                    _logger.LogInformation("[{OperationId}] Document assigned to SME {SmeId} for HITL review",
+                        operationId, assignedSmeId);
+                else
+                    _logger.LogWarning("[{OperationId}] No SME available for DocType '{DocType}', document unassigned",
+                        operationId, docTypeCategory);
+            }
 
             stopwatch.Stop();
             // Step 7: Route the blob to the classified folder
