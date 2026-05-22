@@ -28,7 +28,8 @@ public static class DocumentTypeConfiguration
     {
         { "CRE", DocumentType.Loan },
         { "Valuation", DocumentType.Appraisal },
-        { "CNI", DocumentType.CNI }
+        { "CNI", DocumentType.CNI },
+        { "Other", DocumentType.Other }
     };
 
     public static double GetConfidenceThreshold(DocumentType documentType)

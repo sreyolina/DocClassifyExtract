@@ -39,9 +39,53 @@ public class ContentUnderstandingService : IContentUnderstandingService
 {
     private const string ApiVersion = "2025-05-01-preview";
     private const string ClassifierApiVersion = "2025-11-01";
-    private const string ClassifierId = "doc_classifier_cre_cni_valuation_v2_nonsegmented";
+    private const string OpenAiApiVersion = "2024-12-01-preview";
+    private const string ClassifierId = "doc_classifier_cre_cni_valuation_confidence_score_other";
+    private const string GptDeployment = "gpt-4.1";
     private const int DefaultTimeoutSeconds = 300;
     private const int PollingIntervalSeconds = 2;
+    private const int ConfidenceThresholdPercent = 70;
+    private const double PageSampleRatio = 0.20;
+
+    private const string ValuationDescription =
+        "Appraisal or valuation report focused on estimating property value. " +
+        "Strong indicators: effective age, remaining economic life, USPAP compliance, " +
+        "comparable sales analysis, scope of work, neighborhood analysis, topography analysis, " +
+        "site coverage ratio, floor area ratio, yield capitalization, band of investment, paired sales analysis.";
+
+    private const string CreDescription =
+        "Commercial real estate loan agreement or legal credit package secured by real property. " +
+        "Strong indicators: Assignment of Leases and Rents, tenant estoppel certificates, " +
+        "non-recourse carveouts, DSCR triggers, property cash flow waterfall, " +
+        "mortgage deed, deed of trust, environmental indemnity agreement.";
+
+    private const string CniDescription =
+        "Commercial and industrial loan agreements, corporate credit agreements, borrowing base documents. " +
+        "Indicators: revolving and term loan mechanics, corporate financial covenants, " +
+        "collateral structures not centered on real estate.";
+
+    private const string OtherDescription =
+        "All other documents that do not clearly fall into CRE, CNI, or Valuation. " +
+        "Use this category for unrelated files, mixed-content files, or documents with insufficient evidence for the known categories.";
+
+    private const string UnknownCategoryHumanInterventionMessage = "human intervention required category is unknown";
+
+    private static readonly string GptSystemPrompt =
+        "You are a document classification validator. Given a document excerpt and the category assigned by a classifier, score your confidence that the classification is correct.\n\n" +
+        "CATEGORIES:\n" +
+        $"- Valuation: {ValuationDescription}\n" +
+        $"- CRE: {CreDescription}\n" +
+        $"- CNI: {CniDescription}\n\n" +
+        "SCORING RULES (return confidence as a PERCENTAGE integer between 0 and 99, NEVER 100):\n" +
+        "- 91-99: Document overwhelmingly matches assigned category, many strong indicators present, no competing signals.\n" +
+        "- 70-89: Document clearly matches with several strong indicators but not all are present.\n" +
+        "- 50-69: Ambiguous — some indicators match but competing signals exist.\n" +
+        "- 30-49: Weak match — another category may be more appropriate.\n" +
+        "- 0-29: Likely misclassified.\n\n" +
+        "Be CRITICAL and DISCRIMINATING. Deduct points for each expected indicator NOT found in the excerpt.\n" +
+        "Count how many strong indicators from the assigned category actually appear. Also check if indicators from OTHER categories appear.\n\n" +
+        "Respond ONLY with this JSON (no markdown fences, no extra text):\n" +
+        "{\"confidence_percent\": 95, \"reasoning\": \"2-3 sentence explanation\", \"matched_indicators\": [\"indicator1\"], \"missing_indicators\": [\"indicator not found\"], \"competing_category\": \"category name or null\", \"competing_confidence_percent\": 10}";
 
     private readonly HttpClient _httpClient;
     private readonly ILogger<ContentUnderstandingService> _logger;
@@ -100,6 +144,7 @@ public class ContentUnderstandingService : IContentUnderstandingService
 
         // Step 4: Poll until succeeded
         var rawJson = await PollForCompletionAsync(operationLocation);
+        var topLevelContent = rawJson["result"]?["contents"]?[0];
 
         _logger.LogInformation("Classification + extraction completed for {BlobPath}", blobPath);
 
@@ -126,14 +171,28 @@ public class ContentUnderstandingService : IContentUnderstandingService
                     continue;
                 }
 
+                var scoring = IsOtherCategory(category)
+                    ? CreateUnknownCategoryScoringResult()
+                    : await ScoreClassificationConfidenceAsync(blobPath, category, content, topLevelContent);
+                var requiresHumanIntervention = scoring.ConfidencePercent < ConfidenceThresholdPercent;
+
                 segments.Add(new ClassifiedSegment
                 {
                     Category = category,
                     StartPageNumber = content["startPageNumber"]?.GetValue<int>() ?? 0,
                     EndPageNumber = content["endPageNumber"]?.GetValue<int>() ?? 0,
                     Confidence = content["confidence"]?.GetValue<double>() ?? 0d,
-                    DocumentType = docType.Value
+                    DocumentType = docType.Value,
+                    ConfidencePercent = scoring.ConfidencePercent,
+                    Reasoning = scoring.Reasoning,
+                    MatchedIndicators = scoring.MatchedIndicators,
+                    MissingIndicators = scoring.MissingIndicators,
+                    CompetingCategory = scoring.CompetingCategory,
+                    CompetingConfidencePercent = scoring.CompetingConfidencePercent,
+                    RequiresHumanIntervention = requiresHumanIntervention
                 });
+
+                LogSegmentConfidence(category, blobPath, scoring, requiresHumanIntervention);
             }
         }
 
@@ -150,14 +209,28 @@ public class ContentUnderstandingService : IContentUnderstandingService
                     var docType = DocumentTypeConfiguration.GetDocumentTypeFromCategory(category);
                     if (docType is null) continue;
 
+                    var scoring = IsOtherCategory(category)
+                        ? CreateUnknownCategoryScoringResult()
+                        : await ScoreClassificationConfidenceAsync(blobPath, category, s, topLevelContent);
+                    var requiresHumanIntervention = scoring.ConfidencePercent < ConfidenceThresholdPercent;
+
                     segments.Add(new ClassifiedSegment
                     {
                         Category = category,
                         StartPageNumber = s["startPageNumber"]?.GetValue<int>() ?? 0,
                         EndPageNumber = s["endPageNumber"]?.GetValue<int>() ?? 0,
                         Confidence = s["confidence"]?.GetValue<double>() ?? 0d,
-                        DocumentType = docType.Value
+                        DocumentType = docType.Value,
+                        ConfidencePercent = scoring.ConfidencePercent,
+                        Reasoning = scoring.Reasoning,
+                        MatchedIndicators = scoring.MatchedIndicators,
+                        MissingIndicators = scoring.MissingIndicators,
+                        CompetingCategory = scoring.CompetingCategory,
+                        CompetingConfidencePercent = scoring.CompetingConfidencePercent,
+                        RequiresHumanIntervention = requiresHumanIntervention
                     });
+
+                    LogSegmentConfidence(category, blobPath, scoring, requiresHumanIntervention);
                 }
             }
         }
@@ -174,6 +247,216 @@ public class ContentUnderstandingService : IContentUnderstandingService
         JsonElement rawElement = jsonDoc.RootElement;
 
         return (classification, rawElement);
+    }
+
+    private async Task<GptScoringResult> ScoreClassificationConfidenceAsync(
+        string blobPath,
+        string category,
+        JsonNode segmentContent,
+        JsonNode? topLevelContent)
+    {
+        var excerpt = BuildClassificationExcerpt(segmentContent, topLevelContent);
+        if (string.IsNullOrWhiteSpace(excerpt))
+        {
+            _logger.LogWarning("No markdown excerpt available for confidence scoring of {BlobPath} category {Category}", blobPath, category);
+            return new GptScoringResult
+            {
+                Reasoning = "No markdown excerpt available for confidence scoring."
+            };
+        }
+
+        return await ScoreWithGptAsync(blobPath, category, excerpt);
+    }
+
+    private static bool IsOtherCategory(string category)
+    {
+        return string.Equals(category, "Other", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static GptScoringResult CreateUnknownCategoryScoringResult()
+    {
+        return new GptScoringResult
+        {
+            Reasoning = UnknownCategoryHumanInterventionMessage
+        };
+    }
+
+    private static string BuildClassificationExcerpt(JsonNode segmentContent, JsonNode? topLevelContent)
+    {
+        var segmentMarkdown = segmentContent["markdown"]?.GetValue<string>() ?? string.Empty;
+        if (!string.IsNullOrWhiteSpace(segmentMarkdown))
+        {
+            return ExtractPageSampledExcerpt(segmentContent, segmentMarkdown);
+        }
+
+        var topLevelMarkdown = topLevelContent?["markdown"]?.GetValue<string>() ?? string.Empty;
+        if (string.IsNullOrWhiteSpace(topLevelMarkdown))
+        {
+            return string.Empty;
+        }
+
+        var startPageNumber = segmentContent["startPageNumber"]?.GetValue<int>();
+        var endPageNumber = segmentContent["endPageNumber"]?.GetValue<int>();
+
+        return ExtractPageSampledExcerpt(topLevelContent, topLevelMarkdown, startPageNumber, endPageNumber);
+    }
+
+    private static string ExtractPageSampledExcerpt(
+        JsonNode? content,
+        string markdown,
+        int? startPageNumber = null,
+        int? endPageNumber = null)
+    {
+        const int FallbackChars = 4000;
+
+        if (string.IsNullOrEmpty(markdown))
+        {
+            return string.Empty;
+        }
+
+        var pages = content?["pages"]?.AsArray();
+        if (pages is null || pages.Count == 0)
+        {
+            return markdown.Length > FallbackChars ? markdown[..FallbackChars] : markdown;
+        }
+
+        var eligiblePages = pages
+            .Where(page => page is not null)
+            .Where(page =>
+            {
+                var pageNumber = page!["pageNumber"]?.GetValue<int>() ?? 0;
+                return (!startPageNumber.HasValue || pageNumber >= startPageNumber.Value)
+                    && (!endPageNumber.HasValue || pageNumber <= endPageNumber.Value);
+            })
+            .ToList();
+
+        if (eligiblePages.Count == 0)
+        {
+            return markdown.Length > FallbackChars ? markdown[..FallbackChars] : markdown;
+        }
+
+        var pageLimit = (int)Math.Max(1, Math.Ceiling(eligiblePages.Count * PageSampleRatio));
+        var excerptBuilder = new StringBuilder();
+
+        foreach (var page in eligiblePages.Take(pageLimit))
+        {
+            var spans = page!["spans"]?.AsArray();
+            if (spans is null)
+            {
+                continue;
+            }
+
+            foreach (var span in spans)
+            {
+                var offset = span?["offset"]?.GetValue<int>() ?? -1;
+                var length = span?["length"]?.GetValue<int>() ?? 0;
+
+                if (offset >= 0 && length > 0 && offset + length <= markdown.Length)
+                {
+                    excerptBuilder.Append(markdown, offset, length);
+                }
+            }
+        }
+
+        var excerpt = excerptBuilder.ToString().Trim();
+        return excerpt.Length > 0
+            ? excerpt
+            : (markdown.Length > FallbackChars ? markdown[..FallbackChars] : markdown);
+    }
+
+    private async Task<GptScoringResult> ScoreWithGptAsync(string blobPath, string category, string excerpt)
+    {
+        _logger.LogInformation(
+            "Calling GPT confidence scoring for {BlobPath} category {Category} with excerpt length {Length}",
+            blobPath,
+            category,
+            excerpt.Length);
+
+        var userMessage = $"ASSIGNED CATEGORY: {category}\n\nDOCUMENT EXCERPT:\n{excerpt}";
+        var requestBody = new
+        {
+            messages = new object[]
+            {
+                new { role = "system", content = GptSystemPrompt },
+                new { role = "user", content = userMessage }
+            },
+            temperature = 0.1,
+            max_tokens = 500
+        };
+
+        var chatUrl = $"{_endpoint}/openai/deployments/{GptDeployment}/chat/completions?api-version={OpenAiApiVersion}";
+        using var request = new HttpRequestMessage(HttpMethod.Post, chatUrl);
+        request.Headers.Add("api-key", _apiKey);
+        request.Content = new StringContent(JsonSerializer.Serialize(requestBody), Encoding.UTF8, "application/json");
+
+        var response = await _httpClient.SendAsync(request);
+        if (!response.IsSuccessStatusCode)
+        {
+            var error = await response.Content.ReadAsStringAsync();
+            _logger.LogWarning(
+                "GPT confidence scoring failed ({StatusCode}) for {BlobPath} category {Category}: {Error}",
+                (int)response.StatusCode,
+                blobPath,
+                category,
+                error);
+            return new GptScoringResult();
+        }
+
+        var responseBody = await response.Content.ReadAsStringAsync();
+        var content = JsonNode.Parse(responseBody)?["choices"]?[0]?["message"]?["content"]?.GetValue<string>() ?? string.Empty;
+
+        try
+        {
+            var parsed = JsonNode.Parse(content);
+            return new GptScoringResult
+            {
+                ConfidencePercent = parsed?["confidence_percent"]?.GetValue<int>() ?? 0,
+                Reasoning = parsed?["reasoning"]?.GetValue<string>() ?? string.Empty,
+                MatchedIndicators = parsed?["matched_indicators"]?.AsArray()
+                    .Select(node => node?.GetValue<string>() ?? string.Empty)
+                    .ToList() ?? [],
+                MissingIndicators = parsed?["missing_indicators"]?.AsArray()
+                    .Select(node => node?.GetValue<string>() ?? string.Empty)
+                    .ToList() ?? [],
+                CompetingCategory = parsed?["competing_category"]?.GetValue<string>(),
+                CompetingConfidencePercent = parsed?["competing_confidence_percent"]?.GetValue<int>() ?? 0
+            };
+        }
+        catch (JsonException)
+        {
+            _logger.LogWarning("GPT confidence scoring returned non-JSON for {BlobPath}: {Content}", blobPath, content);
+            return new GptScoringResult();
+        }
+    }
+
+    private void LogSegmentConfidence(string category, string blobPath, GptScoringResult scoring, bool requiresHumanIntervention)
+    {
+        if (IsOtherCategory(category))
+        {
+            _logger.LogWarning(
+                "{Message} for {BlobPath} category {Category}",
+                UnknownCategoryHumanInterventionMessage,
+                blobPath,
+                category);
+            return;
+        }
+
+        if (requiresHumanIntervention)
+        {
+            _logger.LogWarning(
+                "Confidence score less than 70% require human intervention for {BlobPath} category {Category}. Score={Score}. Reason={Reason}",
+                blobPath,
+                category,
+                scoring.ConfidencePercent,
+                scoring.Reasoning);
+            return;
+        }
+
+        _logger.LogInformation(
+            "Confidence score accepted for {BlobPath} category {Category}. Score={Score}",
+            blobPath,
+            category,
+            scoring.ConfidencePercent);
     }
 
     // ────────────────────────────────────────────────────────────────────────
@@ -193,13 +476,21 @@ public class ContentUnderstandingService : IContentUnderstandingService
         // Ensure extraction analyzers exist before creating the classifier (it references them)
         await EnsureExtractionAnalyzersExistAsync();
 
-        static JsonObject MakeCategory(string description, string analyzerId) =>
-            new() { ["description"] = description, ["analyzerId"] = analyzerId };
+        static JsonObject MakeCategory(string description, string? analyzerId = null)
+        {
+            var category = new JsonObject { ["description"] = description };
+            if (!string.IsNullOrWhiteSpace(analyzerId))
+            {
+                category["analyzerId"] = analyzerId;
+            }
+
+            return category;
+        }
 
         var classifierDef = new JsonObject
         {
             ["baseAnalyzerId"] = "prebuilt-document",
-            ["description"] = "Classifier for CRE, C&I, and Valuation documents",
+            ["description"] = "Classifier for CRE, C&I, Valuation, and other documents",
             ["config"] = new JsonObject
             {
                 ["returnDetails"] = true,
@@ -222,7 +513,11 @@ public class ContentUnderstandingService : IContentUnderstandingService
                         "Classify as CNI for commercial and industrial loan agreements, corporate credit agreements, borrowing base documents, and general business lending packages that are not primarily CRE valuation reports and not primarily CRE real estate loan agreements. " +
                         "Typical indicators include borrower and guarantor corporate credit terms, revolving and term loan mechanics, corporate financial covenants, and collateral structures not centered on specific real estate operations. " +
                         "Decision rule: if the document does not clearly match Valuation or CRE, classify as CNI.",
-                        "cni_agreement_analyzer")
+                        "cni_agreement_analyzer"),
+
+                    ["Other"] = MakeCategory(
+                        "Classify as Other when the document does not fall into CRE, CNI, or Valuation. " +
+                        "Use this for unrelated documents, unsupported document types, or documents with insufficient evidence for the known categories.")
                 }
             },
             ["models"] = new JsonObject { ["completion"] = "gpt-4.1" }
@@ -251,6 +546,9 @@ public class ContentUnderstandingService : IContentUnderstandingService
 
         _logger.LogInformation("Enhanced classifier provisioned: {Id}", ClassifierId);
     }
+
+
+    
 
     // ────────────────────────────────────────────────────────────────────────
     // Field method map from analyzer schemas
@@ -533,5 +831,15 @@ public class ContentUnderstandingService : IContentUnderstandingService
 
         _logger.LogError("No contents found in extraction response for {AnalyzerId}", analyzerId);
         return null;
+    }
+
+    private sealed record GptScoringResult
+    {
+        public int ConfidencePercent { get; init; }
+        public string Reasoning { get; init; } = string.Empty;
+        public List<string> MatchedIndicators { get; init; } = [];
+        public List<string> MissingIndicators { get; init; } = [];
+        public string? CompetingCategory { get; init; }
+        public int CompetingConfidencePercent { get; init; }
     }
 }

@@ -9,7 +9,8 @@ public enum DocumentType
 {
     Loan,       // CRE documents
     Appraisal,  // Valuation documents
-    CNI         // C&I documents
+    CNI,        // C&I documents
+    Other       // Unknown or unsupported documents
 }
 
 // ── Extraction result models ────────────────────────────────────────────
@@ -89,6 +90,13 @@ public class ClassifiedSegment
     public int EndPageNumber { get; init; }
     public double Confidence { get; init; }
     public DocumentType DocumentType { get; init; }
+    public int ConfidencePercent { get; init; }
+    public string Reasoning { get; init; } = string.Empty;
+    public List<string> MatchedIndicators { get; init; } = [];
+    public List<string> MissingIndicators { get; init; } = [];
+    public string? CompetingCategory { get; init; }
+    public int CompetingConfidencePercent { get; init; }
+    public bool RequiresHumanIntervention { get; init; }
 }
 
 // ── Content Understanding API response models ───────────────────────────
