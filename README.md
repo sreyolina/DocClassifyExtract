@@ -233,8 +233,9 @@ An Azure Functions v4 (.NET 8 isolated worker) application that automatically cl
 |-------|---------|
 | `dbo.FeatureRef` | Master list of field names → FeatureId mapping |
 | `dbo.FeatureData` | Extracted field values with confidence, citations, and method |
-| `dbo.JobDetails` | Job tracking: JobId, DocumentId, Status, timestamps |
-
+| `dbo.JobDetails` | Job tracking: JobId, DocumentId, Status, timestamps || `dbo.SME` | SME master list: name, doc type specialty, max concurrent docs, active status |
+| `dbo.DocumentAssignment` | Tracks which document is assigned to which SME for HITL review |
+| `dbo.RoundRobinPointer` | Remembers the last assigned SME per doc type for round-robin rotation |
 ---
 
 ## Key Configuration (local.settings.json)
@@ -261,17 +262,55 @@ DocClassifyExtract/
 │   └── DocumentTypeConfiguration.cs # Category → DocType → Analyzer mapping
 │
 ├── Models/
-│   └── DocumentModels.cs            # ExtractedFieldResult, FieldCitation, JobDetails, enums
+│   ├── DocumentModels.cs            # ExtractedFieldResult, FieldCitation, JobDetails, enums
+│   └── SmeModels.cs                 # Sme, DocumentAssignment models
 │
 ├── Services/
 │   ├── ContentUnderstandingService.cs  # Azure AI API calls (classify, extract, schema)
 │   ├── DocumentFieldExtractor.cs       # Field processing, confidence, method detection
 │   ├── CitationService.cs              # Citation parsing & generate-field text matching
 │   ├── FeatureRefService.cs            # FeatureId lookup/auto-creation from SQL
-│   └── DatabaseService.cs             # SQL upsert for FeatureData & JobDetails
+│   ├── DatabaseService.cs             # SQL upsert for FeatureData & JobDetails
+│   └── SmeAssignmentService.cs        # Round-robin SME assignment for HITL review
+│
+├── sql/
+│   └── create_sme_tables.sql          # SQL script to create SME/assignment tables
 │
 └── analyzer-schemas/
     ├── appraisal_report_analyzer.json  # 22 fields (18 extract, 4 generate)
     ├── cni_agreement_analyzer.json     # 9 fields (all extract)
     └── cre_loan_analyzer.json          # 9 fields (all extract)
 ```
+
+---
+
+## SME Round-Robin Assignment (HITL Review)
+
+After field extraction, if any field has `ReviewRequired = true` (confidence below threshold), the document is automatically assigned to an SME for human review.
+
+### How It Works
+
+```
+Fields saved to DB → Any ReviewRequired? → Yes → Read RoundRobinPointer for DocType
+                                                         ↓
+                                           Pick next SME in sequence
+                                                         ↓
+                                           Under max capacity? → Assign + update pointer
+                                                         ↓ (if at capacity)
+                                           Skip, try next SME → All full? → Unassigned
+```
+
+### Tables
+
+- **dbo.SME** — Master list of SMEs with `DocType` (CRE/C&I/Valuation), `MaxConcurrentDocs`, `IsActive`
+- **dbo.DocumentAssignment** — Assignment record: DocumentId → SmeId, Status (Assigned/Completed)
+- **dbo.RoundRobinPointer** — One row per DocType, stores `LastAssignedSmeId`
+
+### Assignment Logic
+
+1. Get all active SMEs for the document's type, ordered by `SmeId`
+2. Read the pointer to find who was assigned last
+3. Start from the next SME in the list (wraps around)
+4. Skip any SME whose current `Assigned` count ≥ `MaxConcurrentDocs`
+5. Assign and update pointer
+6. If all are at capacity, document stays unassigned (can be retried later)

@@ -22,10 +22,12 @@ builder.Services.AddSingleton(serviceProvider =>
 // Register HTTP client for Content Understanding service
 builder.Services.AddHttpClient<IContentUnderstandingService, ContentUnderstandingService>();
 
-// Register extraction & database services
+// Register extraction, routing & database services
 builder.Services.AddScoped<ICitationService, CitationService>();
 builder.Services.AddScoped<IDocumentFieldExtractor, DocumentFieldExtractor>();
 builder.Services.AddScoped<IFeatureRefService, FeatureRefService>();
 builder.Services.AddScoped<IDatabaseService, DatabaseService>();
+builder.Services.AddScoped<IBlobRoutingService, BlobRoutingService>();
+builder.Services.AddScoped<ISmeAssignmentService, SmeAssignmentService>();
 
 builder.Build().Run();

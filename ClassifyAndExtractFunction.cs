@@ -17,19 +17,25 @@ public class ClassifyAndExtractFunction
     private readonly IDocumentFieldExtractor _fieldExtractor;
     private readonly IDatabaseService _databaseService;
     private readonly BlobServiceClient _blobServiceClient;
+    private readonly IBlobRoutingService _blobRoutingService;
+    private readonly ISmeAssignmentService _smeAssignmentService;
 
     public ClassifyAndExtractFunction(
         ILogger<ClassifyAndExtractFunction> logger,
         IContentUnderstandingService contentUnderstandingService,
         IDocumentFieldExtractor fieldExtractor,
         IDatabaseService databaseService,
-        BlobServiceClient blobServiceClient)
+        BlobServiceClient blobServiceClient,
+        IBlobRoutingService blobRoutingService,
+        ISmeAssignmentService smeAssignmentService)
     {
         _logger = logger;
         _contentUnderstandingService = contentUnderstandingService;
         _fieldExtractor = fieldExtractor;
         _databaseService = databaseService;
         _blobServiceClient = blobServiceClient;
+        _blobRoutingService = blobRoutingService;
+        _smeAssignmentService = smeAssignmentService;
     }
 
     /// <summary>
@@ -39,7 +45,7 @@ public class ClassifyAndExtractFunction
     /// </summary>
     [Function("ClassifyAndExtract")]
     public async Task Run(
-        [BlobTrigger("genpact/{name}", Connection = "AzureWebJobsStorage")] string triggerItem,
+        [BlobTrigger("genpact/incoming-documents/{name}", Connection = "AzureWebJobsStorage")] string triggerItem,
         FunctionContext context,
         string name)
     {
@@ -68,7 +74,7 @@ public class ClassifyAndExtractFunction
             var analysisStopwatch = Stopwatch.StartNew();
 
             var (classification, rawResponse) = await _contentUnderstandingService.ClassifyAndAnalyzeAsync(
-                "genpact", name);
+                "genpact", $"incoming-documents/{name}");
 
             analysisStopwatch.Stop();
 
@@ -93,11 +99,11 @@ public class ClassifyAndExtractFunction
             string pdfBaseUrl = "";
             try
             {
-                var blobClient = _blobServiceClient.GetBlobContainerClient("genpact").GetBlobClient(name);
+                var blobClient = _blobServiceClient.GetBlobContainerClient("genpact").GetBlobClient($"incoming-documents/{name}");
                 var sasBuilder = new BlobSasBuilder
                 {
                     BlobContainerName = "genpact",
-                    BlobName = name,
+                    BlobName = $"incoming-documents/{name}",
                     Resource = "b",
                     ExpiresOn = DateTimeOffset.UtcNow.AddHours(24)
                 };
@@ -119,7 +125,7 @@ public class ClassifyAndExtractFunction
                 _logger.LogInformation("[{OperationId}] Extracting segment {Category} (pages {Start}-{End}) with analyzer {AnalyzerId}",
                     operationId, seg.Category, seg.StartPageNumber, seg.EndPageNumber, analyzerId);
 
-                var extractionResult = await _contentUnderstandingService.AnalyzeWithExtractorAsync("genpact", name, analyzerId);
+                var extractionResult = await _contentUnderstandingService.AnalyzeWithExtractorAsync("genpact", $"incoming-documents/{name}", analyzerId);
                 if (extractionResult is null)
                 {
                     _logger.LogWarning("[{OperationId}] Extraction returned null for {AnalyzerId}", operationId, analyzerId);
@@ -171,7 +177,34 @@ public class ClassifyAndExtractFunction
             _logger.LogInformation("[{OperationId}] DB save in {Ms}ms: {Result}",
                 operationId, dbStopwatch.ElapsedMilliseconds, dbSuccess ? "Success" : "Failed");
 
+            // Step 6.5: Assign to SME if any field requires HITL review
+            if (allExtractedFields.Any(f => f.ReviewRequired))
+            {
+                var docTypeCategory = classification.Segments[0].Category;
+                var assignedSmeId = await _smeAssignmentService.AssignDocumentAsync(documentId, docTypeCategory);
+
+                if (assignedSmeId != null)
+                    _logger.LogInformation("[{OperationId}] Document assigned to SME {SmeId} for HITL review",
+                        operationId, assignedSmeId);
+                else
+                    _logger.LogWarning("[{OperationId}] No SME available for DocType '{DocType}', document unassigned",
+                        operationId, docTypeCategory);
+            }
+
             stopwatch.Stop();
+            // Step 7: Route the blob to the classified folder
+            var primarySegment = classification.Segments[0];
+            try
+            {
+                var destPath = await _blobRoutingService.RouteClassifiedBlobAsync(
+                    "genpact", $"incoming-documents/{name}", primarySegment.DocumentType, allExtractedFields);
+                _logger.LogInformation("[{OperationId}] Blob routed to {DestPath}", operationId, destPath);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "[{OperationId}] Blob routing failed for {Name}", operationId, name);
+            }
+
             _logger.LogInformation(
                 "[{OperationId}] COMPLETE: {Name} | Segments: {SegCount} | Fields: {FieldCount} | Total: {TotalMs}ms",
                 operationId, name, classification.Segments.Count, allExtractedFields.Count, stopwatch.ElapsedMilliseconds);
