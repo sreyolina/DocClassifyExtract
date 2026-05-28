@@ -83,8 +83,15 @@ public class ClassifyAndExtractFunction
 
             foreach (var seg in classification.Segments)
             {
-                _logger.LogInformation("[{OperationId}]   Pages {Start}-{End}: {Category} ({DocType}) confidence={Confidence:P0}",
-                    operationId, seg.StartPageNumber, seg.EndPageNumber, seg.Category, seg.DocumentType, seg.Confidence);
+                _logger.LogInformation(
+                    "[{OperationId}]   Pages {Start}-{End}: category={Category}, docType={DocType}, classifierConfidence={Confidence:P0}, confidenceScore={ConfidenceScore}%",
+                    operationId,
+                    seg.StartPageNumber,
+                    seg.EndPageNumber,
+                    seg.Category,
+                    seg.DocumentType,
+                    seg.Confidence,
+                    seg.ConfidencePercent);
             }
 
             if (rawResponse is null || classification.Segments.Count == 0)
@@ -121,6 +128,30 @@ public class ClassifyAndExtractFunction
 
             foreach (var seg in classification.Segments)
             {
+                if (string.Equals(seg.Category, "Other", StringComparison.OrdinalIgnoreCase))
+                {
+                    _logger.LogWarning(
+                        "[{OperationId}] human intervention required category is unknown for {Category} (pages {Start}-{End})",
+                        operationId,
+                        seg.Category,
+                        seg.StartPageNumber,
+                        seg.EndPageNumber);
+                    continue;
+                }
+
+                if (seg.RequiresHumanIntervention)
+                {
+                    _logger.LogWarning(
+                        "[{OperationId}] Confidence score less than 70% require human intervention for {Category} (pages {Start}-{End}). Score={Score}. Reason={Reason}",
+                        operationId,
+                        seg.Category,
+                        seg.StartPageNumber,
+                        seg.EndPageNumber,
+                        seg.ConfidencePercent,
+                        seg.Reasoning);
+                    continue;
+                }
+
                 var analyzerId = DocumentTypeConfiguration.GetAnalyzerId(seg.DocumentType);
                 _logger.LogInformation("[{OperationId}] Extracting segment {Category} (pages {Start}-{End}) with analyzer {AnalyzerId}",
                     operationId, seg.Category, seg.StartPageNumber, seg.EndPageNumber, analyzerId);
@@ -158,6 +189,20 @@ public class ClassifyAndExtractFunction
             _logger.LogInformation("[{OperationId}] Field extraction completed in {Ms}ms: {Count} total fields across {Segments} segment(s)",
                 operationId, extractionStopwatch.ElapsedMilliseconds, allExtractedFields.Count, classification.Segments.Count);
 
+            var hasUnknownCategorySegments = classification.Segments.Any(seg =>
+                string.Equals(seg.Category, "Other", StringComparison.OrdinalIgnoreCase));
+            var hasLowConfidenceSegments = classification.Segments.Any(seg =>
+                seg.RequiresHumanIntervention && !string.Equals(seg.Category, "Other", StringComparison.OrdinalIgnoreCase));
+
+            if (hasUnknownCategorySegments || hasLowConfidenceSegments)
+            {
+                _logger.LogWarning(
+                    "[{OperationId}] Skipping database save and SME assignment because the document requires human intervention",
+                    operationId);
+                stopwatch.Stop();
+                return;
+            }
+
             // Step 5: Determine overall job status
             if (allExtractedFields.Count == 0)
                 jobDetails.Status = "No Fields Extracted";
@@ -177,7 +222,7 @@ public class ClassifyAndExtractFunction
             _logger.LogInformation("[{OperationId}] DB save in {Ms}ms: {Result}",
                 operationId, dbStopwatch.ElapsedMilliseconds, dbSuccess ? "Success" : "Failed");
 
-            // Step 6.5: Assign to SME if any field requires HITL review
+            // Step 6.5: Assign to SME if any extracted field requires HITL review
             if (allExtractedFields.Any(f => f.ReviewRequired))
             {
                 var docTypeCategory = classification.Segments[0].Category;
@@ -194,7 +239,13 @@ public class ClassifyAndExtractFunction
             stopwatch.Stop();
             // Step 7: Route the blob to the classified folder
             var primarySegment = classification.Segments[0];
-            try
+            if (primarySegment.RequiresHumanIntervention)
+            {
+                _logger.LogWarning(
+                    "[{OperationId}] Skipping blob routing because the document category is \"Other\" or confidence score is less than 70% and requires human intervention",
+                    operationId);
+            }
+            else try
             {
                 var destPath = await _blobRoutingService.RouteClassifiedBlobAsync(
                     "genpact", $"incoming-documents/{name}", primarySegment.DocumentType, allExtractedFields);

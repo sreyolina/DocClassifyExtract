@@ -113,6 +113,7 @@ public class DocumentFieldExtractor : IDocumentFieldExtractor
                 }
 
                 double confidence = 0.0;
+                string confidenceReason = string.Empty;
                 if (value.TryGetProperty("confidence", out var confidenceElement))
                     confidence = confidenceElement.GetDouble();
 
@@ -128,14 +129,22 @@ public class DocumentFieldExtractor : IDocumentFieldExtractor
                     fieldValue = valueStringElement.GetString() ?? string.Empty;
                 else if (value.TryGetProperty("valueNumber", out var valueNumberElement))
                     fieldValue = valueNumberElement.GetDouble().ToString("F2");
+                else if (value.TryGetProperty("content", out var contentElement))
+                    fieldValue = contentElement.GetString() ?? string.Empty;
+                else if (value.TryGetProperty("valueGeneratedContent", out var genContentElement))
+                    fieldValue = genContentElement.GetString() ?? string.Empty;
                 else
                 {
+                    // Log the raw JSON to diagnose what property the API returns
+                    _logger.LogWarning("Field {FieldName}: No recognized value property found. Raw JSON: {RawJson}",
+                        key, value.GetRawText());
                     fieldValue = "H-I-T-L";
+                    confidence = 0.0;
                     reviewRequired = true;
+                    confidenceReason = "Value not found in analyzer response - human review required";
                 }
 
                 string fieldMethod = DetermineFieldMethod(key, value, schemaFieldMethods);
-                string confidenceReason = string.Empty;
                 FieldCitation? citation = null;
 
                 if (fieldMethod == "extract")
