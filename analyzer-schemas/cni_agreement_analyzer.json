@@ -27,37 +27,37 @@
       "Pricing_Rules_Available": {
         "type": "string",
         "method": "extract",
-        "description": "Identify all interest/pricing options in the agreement. Extract information from sections and definitions that explain the interest options meaning and their types."
+        "description": "Find the subsection within the 'Loans and Borrowings' section (under ARTICLE II or 'The Credits') that specifies what each type of Borrowing shall be comprised of. Look specifically for the paragraph that begins with language like 'each Revolving Borrowing shall be comprised entirely of...' or 'each Borrowing shall consist of...'. Extract the EXACT operative sentences that define the composition rules, for example: 'each Revolving Borrowing shall be comprised entirely of ABR Loans or Eurodollar Loans' and 'Each Swingline Loan shall be an ABR Loan'. Do NOT just list the loan type names - extract the full rule sentences that state what each borrowing type shall be comprised of or consist of. Also include any rules about conversions between loan types or requirements for borrowings on the Effective Date."
       },
       "Minimum_Drawdown_Amount": {
         "type": "string",
         "method": "extract",
-        "description": "Identify an amount in the agreement that specifies the minimum borrowing the borrower can take under the available pricing options/interest options. Any borrowings by the borrower shall not be less than such amount."
+        "description": "Find the subsection that specifies minimum borrowing amounts for each loan type. Look for language like 'not less than $X' or 'shall be in an aggregate amount...not less than'. Extract the minimum drawdown amount for EACH loan/borrowing type separately in the format: '[Loan Type] >= [Amount]'. For example: 'Eurodollar Revolving Borrowing >= $1,000,000. Swingline Loan >= $100,000.' Map each borrowing type to its specific minimum amount. Do NOT return just a single amount - include ALL loan types and their respective minimums."
       },
       "Minimum_Amount_Multiples": {
         "type": "string",
         "method": "extract",
-        "description": "Extract the minimum integral multiples of borrowing amounts for each pricing option or interest option specified in the agreement."
+        "description": "Find the subsection that specifies the integral multiples for borrowing amounts for each loan type. Look for language like 'an integral multiple of $X' for each borrowing type. Extract the multiple for EACH loan/borrowing type separately in the format: '[Loan Type]: integral multiple of [Amount]'. For example: 'Eurodollar Revolving Borrowing: integral multiple of $500,000. Swingline Loan: integral multiple of $100,000.' Map each borrowing type to its specific integral multiple amount. Do NOT return just a single multiple - include ALL loan types and their respective integral multiples."
       },
       "Maximum_Loans_Outstanding": {
         "type": "string",
         "method": "extract",
         "description": "Identify and extract the maximum number of loans that can be outstanding simultaneously under each type of interest option/pricing options."
       },
-      "Commitment_Fee_Payment": {
+      "Commitment_Fee_Payment_Frequency": {
         "type": "string",
         "method": "extract",
-        "description": "What are the types of fees given in credit agreement which are calculated on applicable rate and is applied to a variable base balance. Such fee is of accrual nature that accrue over time."
+        "description": "Find the 'Fees' section of the agreement that describes commitment fees payable by the Borrower. Extract the EXACT sentences that describe when and how often accrued commitment fees are payable. Look for language like 'Accrued commitment fees shall be payable in arrears on...' followed by specific dates or periods (e.g., 'the first Business Day of each January, April, July and October') and any termination payment date (e.g., 'and on the date on which the Revolving Commitments terminate'). Include the full payment schedule sentence including commencement language like 'commencing on the first such date to occur after the date hereof'. Do NOT extract the fee rate or calculation base - only extract the payment frequency and schedule."
       },
       "Facility_Type": {
         "type": "string",
         "method": "extract",
-        "description": "Extract all information related to commitments, credits, loans and advances and facility types. Look for different types of commitments or loans or limits agreed upon between the lenders and the borrowers. Check the sections, schedules, exhibits, definitions and tables that contains commitment meaning and information related to commitment types."
+        "description": "Extract the types of credit facilities, loans, and commitments available under the agreement. Look in the credits/commitments section and the definitions for terms like 'Revolving Loans', 'Protective Advances', 'Overadvances', 'Swingline Loans', 'Letter of Credit', 'Term Loans', etc. List ALL distinct facility/loan types separated by semicolons. The output format should be like: 'Revolving Loans; Protective Advances; Overadvances; Swingline Loans; Letter of Credit'. Do NOT include generic descriptions or amounts - only list the names of each distinct type of credit or loan facility available."
       },
       "Facility_Amount": {
         "type": "string",
         "method": "extract",
-        "description": "Identify the type of facility/commitment/credit or loans along with amount mentioned against each lender entity. Check section, definition, schedule, exhibit or any table given in agreement for facility commitment amounts."
+        "description": "Extract the maximum amount or limit for EACH type of facility, commitment, or loan available in the agreement. For each facility type, find the section that specifies its dollar limit or cap. Look for language like 'shall not exceed $X', 'limited to an aggregate amount not to exceed $X', 'outstanding...exceeding $X', or 'aggregate amount of the Lenders Commitments is $X'. Extract ALL facility types and their amounts in the format: '[Facility Type]: $[Amount]'. Include: (1) Revolving Commitments total amount, (2) Protective Advances limit (look for 'Protective Advances outstanding...shall not exceed'), (3) Overadvances limit (look for 'limited to an aggregate amount not to exceed'), (4) Swingline Loans limit (look for 'aggregate principal amount of outstanding Swingline Loans exceeding'), (5) Letter of Credit limit (look for 'LC Exposure shall not exceed'). Do NOT return only the Revolving Commitment amount - include ALL sub-limits for every facility type mentioned."
       }
     }
   }

@@ -1,0 +1,129 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>
+endobj
+
+4 0 obj
+<< /Length 2400 >>
+stream
+BT
+/F1 16 Tf
+50 740 Td
+(COMMERCIAL PROPERTY LEASE AGREEMENT) Tj
+/F1 11 Tf
+0 -30 Td
+(Lease Reference: LSE-2026-00312) Tj
+0 -15 Td
+(Effective Date: April 1, 2026) Tj
+0 -30 Td
+(LANDLORD) Tj
+0 -20 Td
+(Name: Meridian Commercial Properties Inc.) Tj
+0 -15 Td
+(Address: 500 Park Avenue, Suite 1200, New York, NY 10022) Tj
+0 -15 Td
+(Tax ID: 84-2917563) Tj
+0 -30 Td
+(TENANT) Tj
+0 -20 Td
+(Name: DataStream Analytics Corp.) Tj
+0 -15 Td
+(Address: 2200 Technology Blvd, Austin, TX 78701) Tj
+0 -15 Td
+(Contact: Michael Chen, VP of Operations) Tj
+0 -30 Td
+(PREMISES DESCRIPTION) Tj
+0 -20 Td
+(Property Address: 8400 Westpark Drive, Floors 3-5, McLean, VA 22102) Tj
+0 -15 Td
+(Property Type: Class A Office Space) Tj
+0 -15 Td
+(Rentable Square Footage: 45,000 sq ft) Tj
+0 -15 Td
+(Common Area Factor: 1.15) Tj
+0 -15 Td
+(Parking Spaces: 120 reserved spaces in attached garage) Tj
+0 -30 Td
+(LEASE FINANCIAL TERMS) Tj
+0 -20 Td
+(Base Annual Rent: USD 2,025,000.00) Tj
+0 -15 Td
+(Monthly Rent: USD 168,750.00) Tj
+0 -15 Td
+(Rent Per Square Foot: USD 45.00 per annum) Tj
+0 -15 Td
+(Annual Escalation: 3 percent per year) Tj
+0 -15 Td
+(Security Deposit: USD 337,500.00 two months rent) Tj
+0 -15 Td
+(Lease Term: 7 years commencing April 1, 2026) Tj
+0 -15 Td
+(Expiration Date: March 31, 2033) Tj
+0 -15 Td
+(Lease Type: Triple Net NNN) Tj
+0 -30 Td
+(OPERATING EXPENSES AND CAM CHARGES) Tj
+0 -20 Td
+(Estimated Annual CAM: USD 8.50 per sq ft) Tj
+0 -15 Td
+(Property Tax Pass-Through: Proportionate share 22.5 percent) Tj
+0 -15 Td
+(Insurance: Tenant responsible for liability and contents) Tj
+0 -15 Td
+(Utilities: Separately metered, tenant responsibility) Tj
+0 -30 Td
+(TENANT IMPROVEMENT ALLOWANCE) Tj
+0 -20 Td
+(TI Allowance: USD 55.00 per sq ft) Tj
+0 -15 Td
+(Total TI Budget: USD 2,475,000.00) Tj
+0 -15 Td
+(Construction Period: 90 days from lease execution) Tj
+0 -30 Td
+(RENEWAL OPTIONS) Tj
+0 -20 Td
+(Tenant has two 5-year renewal options at fair market value) Tj
+0 -15 Td
+(Notice required: 12 months prior to expiration) Tj
+0 -30 Td
+(DEFAULT AND REMEDIES) Tj
+0 -20 Td
+(Late payment fee: 5 percent of monthly rent after 10-day grace period) Tj
+0 -15 Td
+(Cure period for non-monetary default: 30 days written notice) Tj
+0 -30 Td
+(SIGNATURES) Tj
+0 -20 Td
+(Landlord: Meridian Commercial Properties Inc.  Date: March 28, 2026) Tj
+0 -15 Td
+(Tenant: DataStream Analytics Corp.  Date: March 29, 2026) Tj
+ET
+endstream
+endobj
+
+5 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+
+xref
+0 6
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000266 00000 n 
+0000002720 00000 n 
+
+trailer
+<< /Size 6 /Root 1 0 R >>
+startxref
+2797
+%%EOF

@@ -1,0 +1,158 @@
+Azure Functions Core Tools
+Core Tools Version:       4.10.0+2ced9a89e29b04615bc55cd527c074250266362f (64-bit)
+Function Runtime Version: 4.1048.200.26180
+
+[2026-05-26T18:49:34.942Z] Found C:\Users\somolinasaha\Downloads\Genpact\DocClassifyExtract\DocClassifyExtract\DocClassifyExtract.csproj. Using for user secrets file configuration.
+[2026-05-26T18:49:40.149Z] Worker process started and initialized.
+[2026-05-26T18:49:40.296Z] Soon retries will not be supported for function 'Functions.ClassifyAndExtract'. For more information, please visit http://aka.ms/func-retry-policies.
+
+Functions:
+
+        ClassifyAndExtract: blobTrigger
+
+For detailed output, run func with --verbose flag.
+[2026-05-26T18:49:46.293Z] Host lock lease acquired by instance ID '00000000000000000000000045D352CC'.
+[2026-05-26T18:49:46.794Z] Executing 'Functions.ClassifyAndExtract' (Reason='New blob detected(LogsAndContainerScan): genpact/incoming-documents/Sample CNI Credit Agreement - JP Morgan.pdf', Id=0980fe80-e322-4ecd-a33f-4d75d178fc53)
+[2026-05-26T18:49:46.797Z] Trigger Details: MessageId: 701db74d-c792-4a38-a8e4-6fd99fc14aad, DequeueCount: 1, InsertedOn: 2026-05-26T18:49:44.000+00:00, BlobCreated: 2026-05-26T18:42:42.000+00:00, BlobLastModified: 2026-05-26T18:42:42.000+00:00
+[2026-05-26T18:49:49.445Z] [b07da2d2] Blob trigger fired for: Sample CNI Credit Agreement - JP Morgan.pdf
+[2026-05-26T18:49:49.447Z] [b07da2d2] JobId=978c9bd6-2fa9-4a68-a2c2-314982283784, DocumentId=Sample CNI Credit Agreement - JP Morgan
+[2026-05-26T18:49:49.449Z] ClassifyAndAnalyze starting for incoming-documents/Sample CNI Credit Agreement - JP Morgan.pdf
+[2026-05-26T18:49:49.453Z] Start processing HTTP request GET https://doc-classify-foundry.cognitiveservices.azure.com/contentunderstanding/analyzers/doc_classifier_cre_cni_valuation_confidence_score_other?api-version=2025-11-01
+[2026-05-26T18:49:49.455Z] Sending HTTP request GET https://doc-classify-foundry.cognitiveservices.azure.com/contentunderstanding/analyzers/doc_classifier_cre_cni_valuation_confidence_score_other?api-version=2025-11-01
+[2026-05-26T18:49:50.330Z] Received HTTP response headers after 864.8236ms - 200
+[2026-05-26T18:49:50.331Z] End processing HTTP request after 882.9668ms - 200
+[2026-05-26T18:49:50.615Z] Start processing HTTP request POST https://doc-classify-foundry.cognitiveservices.azure.com/contentunderstanding/analyzers/doc_classifier_cre_cni_valuation_confidence_score_other:analyze?api-version=2025-11-01
+[2026-05-26T18:49:50.616Z] Sending HTTP request POST https://doc-classify-foundry.cognitiveservices.azure.com/contentunderstanding/analyzers/doc_classifier_cre_cni_valuation_confidence_score_other:analyze?api-version=2025-11-01
+[2026-05-26T18:49:51.192Z] Received HTTP response headers after 576.7546ms - 202
+[2026-05-26T18:49:51.193Z] End processing HTTP request after 577.638ms - 202
+[2026-05-26T18:49:53.206Z] Start processing HTTP request GET https://doc-classify-foundry.cognitiveservices.azure.com/contentunderstanding/analyzerResults/ac17e89b-5758-49ff-b0e5-f1bb1773c2b3?api-version=2025-11-01
+[2026-05-26T18:49:53.208Z] Sending HTTP request GET https://doc-classify-foundry.cognitiveservices.azure.com/contentunderstanding/analyzerResults/ac17e89b-5758-49ff-b0e5-f1bb1773c2b3?api-version=2025-11-01
+[2026-05-26T18:49:53.505Z] Received HTTP response headers after 297.6738ms - 200
+[2026-05-26T18:49:53.506Z] End processing HTTP request after 298.4291ms - 200
+[2026-05-26T18:49:53.507Z] Operation status: Running
+[2026-05-26T18:49:56.523Z] Start processing HTTP request GET https://doc-classify-foundry.cognitiveservices.azure.com/contentunderstanding/analyzerResults/ac17e89b-5758-49ff-b0e5-f1bb1773c2b3?api-version=2025-11-01
+[2026-05-26T18:49:56.526Z] Sending HTTP request GET https://doc-classify-foundry.cognitiveservices.azure.com/contentunderstanding/analyzerResults/ac17e89b-5758-49ff-b0e5-f1bb1773c2b3?api-version=2025-11-01
+[2026-05-26T18:49:56.917Z] Received HTTP response headers after 395.168ms - 200
+[2026-05-26T18:49:56.918Z] End processing HTTP request after 396.1245ms - 200
+[2026-05-26T18:49:56.927Z] Operation status: Running
+[2026-05-26T18:50:01.427Z] Start processing HTTP request GET https://doc-classify-foundry.cognitiveservices.azure.com/contentunderstanding/analyzerResults/ac17e89b-5758-49ff-b0e5-f1bb1773c2b3?api-version=2025-11-01
+[2026-05-26T18:50:01.428Z] Sending HTTP request GET https://doc-classify-foundry.cognitiveservices.azure.com/contentunderstanding/analyzerResults/ac17e89b-5758-49ff-b0e5-f1bb1773c2b3?api-version=2025-11-01
+[2026-05-26T18:50:01.728Z] Received HTTP response headers after 300.5965ms - 200
+[2026-05-26T18:50:01.729Z] End processing HTTP request after 301.3559ms - 200
+[2026-05-26T18:50:01.731Z] Operation status: Running
+[2026-05-26T18:50:08.480Z] Start processing HTTP request GET https://doc-classify-foundry.cognitiveservices.azure.com/contentunderstanding/analyzerResults/ac17e89b-5758-49ff-b0e5-f1bb1773c2b3?api-version=2025-11-01
+[2026-05-26T18:50:08.482Z] Sending HTTP request GET https://doc-classify-foundry.cognitiveservices.azure.com/contentunderstanding/analyzerResults/ac17e89b-5758-49ff-b0e5-f1bb1773c2b3?api-version=2025-11-01
+[2026-05-26T18:50:09.147Z] Received HTTP response headers after 666.1855ms - 200
+[2026-05-26T18:50:09.148Z] End processing HTTP request after 667.2388ms - 200
+[2026-05-26T18:50:09.150Z] Operation status: Running
+[2026-05-26T18:50:19.288Z] Start processing HTTP request GET https://doc-classify-foundry.cognitiveservices.azure.com/contentunderstanding/analyzerResults/ac17e89b-5758-49ff-b0e5-f1bb1773c2b3?api-version=2025-11-01
+[2026-05-26T18:50:19.291Z] Sending HTTP request GET https://doc-classify-foundry.cognitiveservices.azure.com/contentunderstanding/analyzerResults/ac17e89b-5758-49ff-b0e5-f1bb1773c2b3?api-version=2025-11-01
+[2026-05-26T18:50:19.580Z] Received HTTP response headers after 292.452ms - 200
+[2026-05-26T18:50:19.582Z] End processing HTTP request after 293.128ms - 200
+[2026-05-26T18:50:19.583Z] Operation status: Running
+[2026-05-26T18:50:34.781Z] Start processing HTTP request GET https://doc-classify-foundry.cognitiveservices.azure.com/contentunderstanding/analyzerResults/ac17e89b-5758-49ff-b0e5-f1bb1773c2b3?api-version=2025-11-01
+[2026-05-26T18:50:34.782Z] Sending HTTP request GET https://doc-classify-foundry.cognitiveservices.azure.com/contentunderstanding/analyzerResults/ac17e89b-5758-49ff-b0e5-f1bb1773c2b3?api-version=2025-11-01
+[2026-05-26T18:50:35.580Z] Received HTTP response headers after 798.953ms - 200
+[2026-05-26T18:50:35.582Z] End processing HTTP request after 799.5784ms - 200
+[2026-05-26T18:50:35.583Z] Operation status: Running
+[2026-05-26T18:50:58.375Z] Start processing HTTP request GET https://doc-classify-foundry.cognitiveservices.azure.com/contentunderstanding/analyzerResults/ac17e89b-5758-49ff-b0e5-f1bb1773c2b3?api-version=2025-11-01
+[2026-05-26T18:50:58.394Z] Sending HTTP request GET https://doc-classify-foundry.cognitiveservices.azure.com/contentunderstanding/analyzerResults/ac17e89b-5758-49ff-b0e5-f1bb1773c2b3?api-version=2025-11-01
+[2026-05-26T18:50:59.057Z] Received HTTP response headers after 680.8786ms - 200
+[2026-05-26T18:50:59.063Z] End processing HTTP request after 681.5673ms - 200
+[2026-05-26T18:50:59.065Z] Operation status: Running
+[2026-05-26T18:51:29.071Z] Start processing HTTP request GET https://doc-classify-foundry.cognitiveservices.azure.com/contentunderstanding/analyzerResults/ac17e89b-5758-49ff-b0e5-f1bb1773c2b3?api-version=2025-11-01
+[2026-05-26T18:51:29.092Z] Sending HTTP request GET https://doc-classify-foundry.cognitiveservices.azure.com/contentunderstanding/analyzerResults/ac17e89b-5758-49ff-b0e5-f1bb1773c2b3?api-version=2025-11-01
+[2026-05-26T18:51:29.656Z] Received HTTP response headers after 584.9041ms - 200
+[2026-05-26T18:51:29.658Z] End processing HTTP request after 585.5057ms - 200
+[2026-05-26T18:51:29.660Z] Operation status: Running
+[2026-05-26T18:51:59.671Z] Start processing HTTP request GET https://doc-classify-foundry.cognitiveservices.azure.com/contentunderstanding/analyzerResults/ac17e89b-5758-49ff-b0e5-f1bb1773c2b3?api-version=2025-11-01
+[2026-05-26T18:51:59.673Z] Sending HTTP request GET https://doc-classify-foundry.cognitiveservices.azure.com/contentunderstanding/analyzerResults/ac17e89b-5758-49ff-b0e5-f1bb1773c2b3?api-version=2025-11-01
+[2026-05-26T18:52:02.049Z] Received HTTP response headers after 2378.5694ms - 200
+[2026-05-26T18:52:02.052Z] End processing HTTP request after 2379.1202ms - 200
+[2026-05-26T18:53:11.958Z] Operation status: Succeeded
+[2026-05-26T18:53:11.985Z] Classification + extraction completed for incoming-documents/Sample CNI Credit Agreement - JP Morgan.pdf
+[2026-05-26T18:53:11.986Z] Calling GPT confidence scoring for incoming-documents/Sample CNI Credit Agreement - JP Morgan.pdf category CNI with excerpt length 59077
+[2026-05-26T18:53:11.993Z] Start processing HTTP request POST https://doc-classify-foundry.cognitiveservices.azure.com/openai/deployments/gpt-4.1/chat/completions?api-version=2024-12-01-preview
+[2026-05-26T18:53:12.004Z] Sending HTTP request POST https://doc-classify-foundry.cognitiveservices.azure.com/openai/deployments/gpt-4.1/chat/completions?api-version=2024-12-01-preview
+[2026-05-26T18:53:16.141Z] Received HTTP response headers after 4147.2892ms - 200
+[2026-05-26T18:53:16.205Z] End processing HTTP request after 4147.9451ms - 200
+[2026-05-26T18:53:16.208Z] Confidence score accepted for incoming-documents/Sample CNI Credit Agreement - JP Morgan.pdf category CNI. Score=98
+[2026-05-26T18:53:16.643Z] [b07da2d2] Classification complete in 207206ms: 1 segment(s) found
+[2026-05-26T18:53:16.645Z] [b07da2d2]   Pages 1-104: category=CNI, docType=CNI, classifierConfidence=0 %, confidenceScore=98%
+[2026-05-26T18:53:16.646Z] [b07da2d2] Extracting segment CNI (pages 1-104) with analyzer cni_agreement_analyzer
+[2026-05-26T18:53:16.648Z] Calling extraction analyzer cni_agreement_analyzer for incoming-documents/Sample CNI Credit Agreement - JP Morgan.pdf
+[2026-05-26T18:53:16.649Z] Start processing HTTP request POST https://doc-classify-foundry.cognitiveservices.azure.com/contentunderstanding/analyzers/cni_agreement_analyzer:analyze?api-version=2025-11-01
+[2026-05-26T18:53:16.651Z] Sending HTTP request POST https://doc-classify-foundry.cognitiveservices.azure.com/contentunderstanding/analyzers/cni_agreement_analyzer:analyze?api-version=2025-11-01
+[2026-05-26T18:53:18.454Z] Received HTTP response headers after 1804.9512ms - 202
+[2026-05-26T18:53:18.456Z] End processing HTTP request after 1805.1521ms - 202
+[2026-05-26T18:53:20.457Z] Start processing HTTP request GET https://doc-classify-foundry.cognitiveservices.azure.com/contentunderstanding/analyzerResults/a08a593d-2a99-4c83-9b50-21d35f2e7a9c?api-version=2025-11-01
+[2026-05-26T18:53:20.458Z] Sending HTTP request GET https://doc-classify-foundry.cognitiveservices.azure.com/contentunderstanding/analyzerResults/a08a593d-2a99-4c83-9b50-21d35f2e7a9c?api-version=2025-11-01
+[2026-05-26T18:53:21.296Z] Received HTTP response headers after 839.5774ms - 200
+[2026-05-26T18:53:21.298Z] End processing HTTP request after 839.9553ms - 200
+[2026-05-26T18:53:21.301Z] Operation status: Running
+[2026-05-26T18:53:24.310Z] Start processing HTTP request GET https://doc-classify-foundry.cognitiveservices.azure.com/contentunderstanding/analyzerResults/a08a593d-2a99-4c83-9b50-21d35f2e7a9c?api-version=2025-11-01
+[2026-05-26T18:53:24.312Z] Sending HTTP request GET https://doc-classify-foundry.cognitiveservices.azure.com/contentunderstanding/analyzerResults/a08a593d-2a99-4c83-9b50-21d35f2e7a9c?api-version=2025-11-01
+[2026-05-26T18:53:24.957Z] Received HTTP response headers after 647.3303ms - 200
+[2026-05-26T18:53:24.959Z] End processing HTTP request after 647.6729ms - 200
+[2026-05-26T18:53:24.960Z] Operation status: Running
+[2026-05-26T18:53:29.467Z] Start processing HTTP request GET https://doc-classify-foundry.cognitiveservices.azure.com/contentunderstanding/analyzerResults/a08a593d-2a99-4c83-9b50-21d35f2e7a9c?api-version=2025-11-01
+[2026-05-26T18:53:29.468Z] Sending HTTP request GET https://doc-classify-foundry.cognitiveservices.azure.com/contentunderstanding/analyzerResults/a08a593d-2a99-4c83-9b50-21d35f2e7a9c?api-version=2025-11-01
+[2026-05-26T18:53:30.385Z] Received HTTP response headers after 918.7552ms - 200
+[2026-05-26T18:53:30.386Z] End processing HTTP request after 919.498ms - 200
+[2026-05-26T18:53:30.388Z] Operation status: Running
+[2026-05-26T18:53:37.139Z] Start processing HTTP request GET https://doc-classify-foundry.cognitiveservices.azure.com/contentunderstanding/analyzerResults/a08a593d-2a99-4c83-9b50-21d35f2e7a9c?api-version=2025-11-01
+[2026-05-26T18:53:37.140Z] Sending HTTP request GET https://doc-classify-foundry.cognitiveservices.azure.com/contentunderstanding/analyzerResults/a08a593d-2a99-4c83-9b50-21d35f2e7a9c?api-version=2025-11-01
+[2026-05-26T18:53:37.911Z] Received HTTP response headers after 771.8332ms - 200
+[2026-05-26T18:53:37.912Z] End processing HTTP request after 772.4875ms - 200
+[2026-05-26T18:53:37.913Z] Operation status: Running
+[2026-05-26T18:53:48.052Z] Start processing HTTP request GET https://doc-classify-foundry.cognitiveservices.azure.com/contentunderstanding/analyzerResults/a08a593d-2a99-4c83-9b50-21d35f2e7a9c?api-version=2025-11-01
+[2026-05-26T18:53:48.053Z] Sending HTTP request GET https://doc-classify-foundry.cognitiveservices.azure.com/contentunderstanding/analyzerResults/a08a593d-2a99-4c83-9b50-21d35f2e7a9c?api-version=2025-11-01
+[2026-05-26T18:53:48.338Z] Received HTTP response headers after 286.3423ms - 200
+[2026-05-26T18:53:48.342Z] End processing HTTP request after 286.784ms - 200
+[2026-05-26T18:53:48.343Z] Operation status: Running
+[2026-05-26T18:54:03.532Z] Start processing HTTP request GET https://doc-classify-foundry.cognitiveservices.azure.com/contentunderstanding/analyzerResults/a08a593d-2a99-4c83-9b50-21d35f2e7a9c?api-version=2025-11-01
+[2026-05-26T18:54:03.534Z] Sending HTTP request GET https://doc-classify-foundry.cognitiveservices.azure.com/contentunderstanding/analyzerResults/a08a593d-2a99-4c83-9b50-21d35f2e7a9c?api-version=2025-11-01
+[2026-05-26T18:54:04.244Z] Received HTTP response headers after 711.8042ms - 200
+[2026-05-26T18:54:04.247Z] End processing HTTP request after 712.347ms - 200
+[2026-05-26T18:54:04.248Z] Operation status: Running
+[2026-05-26T18:54:27.033Z] Start processing HTTP request GET https://doc-classify-foundry.cognitiveservices.azure.com/contentunderstanding/analyzerResults/a08a593d-2a99-4c83-9b50-21d35f2e7a9c?api-version=2025-11-01
+[2026-05-26T18:54:27.034Z] Sending HTTP request GET https://doc-classify-foundry.cognitiveservices.azure.com/contentunderstanding/analyzerResults/a08a593d-2a99-4c83-9b50-21d35f2e7a9c?api-version=2025-11-01
+[2026-05-26T18:54:27.348Z] Received HTTP response headers after 315.4563ms - 200
+[2026-05-26T18:54:27.349Z] End processing HTTP request after 316.1053ms - 200
+[2026-05-26T18:54:27.351Z] Operation status: Running
+[2026-05-26T18:54:57.362Z] Start processing HTTP request GET https://doc-classify-foundry.cognitiveservices.azure.com/contentunderstanding/analyzerResults/a08a593d-2a99-4c83-9b50-21d35f2e7a9c?api-version=2025-11-01
+[2026-05-26T18:54:57.363Z] Sending HTTP request GET https://doc-classify-foundry.cognitiveservices.azure.com/contentunderstanding/analyzerResults/a08a593d-2a99-4c83-9b50-21d35f2e7a9c?api-version=2025-11-01
+[2026-05-26T18:54:58.245Z] Received HTTP response headers after 883.5318ms - 200
+[2026-05-26T18:54:58.246Z] End processing HTTP request after 884.2532ms - 200
+[2026-05-26T18:54:58.247Z] Operation status: Running
+[2026-05-26T18:55:28.258Z] Start processing HTTP request GET https://doc-classify-foundry.cognitiveservices.azure.com/contentunderstanding/analyzerResults/a08a593d-2a99-4c83-9b50-21d35f2e7a9c?api-version=2025-11-01
+[2026-05-26T18:55:28.259Z] Sending HTTP request GET https://doc-classify-foundry.cognitiveservices.azure.com/contentunderstanding/analyzerResults/a08a593d-2a99-4c83-9b50-21d35f2e7a9c?api-version=2025-11-01
+[2026-05-26T18:55:29.926Z] Received HTTP response headers after 1668.8283ms - 200
+[2026-05-26T18:55:29.927Z] End processing HTTP request after 1669.2534ms - 200
+[2026-05-26T18:56:03.836Z] Operation status: Succeeded
+[2026-05-26T18:56:05.866Z] Cached 0 features (simple mapping)
+[2026-05-26T18:56:05.872Z] === Processing Fields for Document: Sample CNI Credit Agreement - JP Morgan.pdf (markdown: 333806 chars) ===
+[2026-05-26T18:56:06.422Z] Auto-registered feature: Agreement_Date -> FeatureId: 47
+[2026-05-26T18:56:07.023Z] Auto-registered feature: Borrower_Name -> FeatureId: 48
+[2026-05-26T18:56:07.535Z] Auto-registered feature: Pricing_Rules_Available -> FeatureId: 49
+[2026-05-26T18:56:08.040Z] Auto-registered feature: Minimum_Drawdown_Amount -> FeatureId: 50
+[2026-05-26T18:56:08.568Z] Auto-registered feature: Minimum_Amount_Multiples -> FeatureId: 51
+[2026-05-26T18:56:09.082Z] Auto-registered feature: Maximum_Loans_Outstanding -> FeatureId: 52
+[2026-05-26T18:56:09.604Z] Auto-registered feature: Commitment_Fee_Payment_Frequency -> FeatureId: 53
+[2026-05-26T18:56:10.118Z] Auto-registered feature: Facility_Type -> FeatureId: 54
+[2026-05-26T18:56:10.630Z] Auto-registered feature: Facility_Amount -> FeatureId: 55
+[2026-05-26T18:56:10.631Z] === End Field Processing ===
+[2026-05-26T18:56:10.632Z] Extracted 9 fields from Sample CNI Credit Agreement - JP Morgan.pdf. Extract: 9, Generate: 0, Low confidence: 2, Missing values: 0, Status: Partially Successful
+[2026-05-26T18:56:10.633Z] [b07da2d2] Extracted 9 fields from cni_agreement_analyzer: Partially Successful
+[2026-05-26T18:56:10.634Z] [b07da2d2] Field extraction completed in 173985ms: 9 total fields across 1 segment(s)
+[2026-05-26T18:56:13.306Z] Successfully inserted 9 feature data records
+[2026-05-26T18:56:13.567Z] Successfully inserted/updated job details for JobId: 978c9bd6-2fa9-4a68-a2c2-314982283784
+[2026-05-26T18:56:13.568Z] [b07da2d2] DB save in 2934ms: Success
+[2026-05-26T18:56:15.216Z] Document 'Sample CNI Credit Agreement - JP Morgan' assigned to SME 5 for DocType 'CNI'
+[2026-05-26T18:56:15.217Z] [b07da2d2] Document assigned to SME 5 for HITL review
+[2026-05-26T18:56:16.358Z] Created blob folder marker: cni
+[2026-05-26T18:56:16.359Z] Routing blob incoming-documents/Sample CNI Credit Agreement - JP Morgan.pdf → cni/C&I_OGLEBAY-NORTON-COMPANY_CreditAgreement_07312006.pdf
+[2026-05-26T18:56:17.296Z] Blob routed and original deleted: cni/C&I_OGLEBAY-NORTON-COMPANY_CreditAgreement_07312006.pdf
+[2026-05-26T18:56:17.297Z] [b07da2d2] Blob routed to cni/C&I_OGLEBAY-NORTON-COMPANY_CreditAgreement_07312006.pdf
+[2026-05-26T18:56:17.298Z] [b07da2d2] COMPLETE: Sample CNI Credit Agreement - JP Morgan.pdf | Segments: 1 | Fields: 9 | Total: 385784ms
+[2026-05-26T18:56:17.327Z] Executed 'Functions.ClassifyAndExtract' (Succeeded, Id=0980fe80-e322-4ecd-a33f-4d75d178fc53, Duration=390826ms)

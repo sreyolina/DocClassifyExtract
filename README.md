@@ -2,7 +2,7 @@
 
 ## Overview
 
-An Azure Functions v4 (.NET 8 isolated worker) application that classifies uploaded documents, validates the classification with GPT-based confidence scoring, extracts structured fields for high-confidence known document types, and stores successful extraction results in SQL Server.
+An Azure Functions v4 (.NET 8 isolated worker) application that classifies uploaded documents, validates the classification with GPT-based confidence scoring, extracts structured fields for high-confidence known document types, stores successful extraction results in SQL Server, assigns documents to SMEs for HITL review via round-robin, and routes classified blobs to organized destination folders.
 
 ---
 
@@ -33,7 +33,9 @@ An Azure Functions v4 (.NET 8 isolated worker) application that classifies uploa
 │  │   • Call Azure Content Understanding Classifier API                 │    │
 │  │   • Classifier: "doc_classifier_cre_cni_valuation_                 │    │
 │  │     confidence_score_other"                                         │    │
-│  │   • API Version: 2025-11-01                                         │    │
+│  │   • Classifier API Version: 2025-11-01                              │    │
+│  │   • Extraction API Version: 2025-05-01-preview                      │    │
+│  │   • GPT Model: gpt-4.1 (API: 2024-12-01-preview)                   │    │
 │  │   • Categories: CRE / Valuation / CNI / Other                       │    │
 │  │                                                                     │    │
 │  │   Returns segments, each with:                                      │    │
@@ -126,6 +128,31 @@ An Azure Functions v4 (.NET 8 isolated worker) application that classifies uploa
 │  │   • MERGE INTO dbo.FeatureData (upsert per DocumentId + FeatureId)  │    │
 │  │   • INSERT/UPDATE dbo.JobDetails (job tracking)                     │    │
 │  │   • Auto-create FeatureRef entries for new field names              │    │
+│  └────────────────────────────┬────────────────────────────────────────┘    │
+│                               │                                             │
+│                               ▼                                             │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │ STEP 7: SME Assignment (HITL Review)                                │    │
+│  │   • Only if any extracted field has ReviewRequired = true           │    │
+│  │   • Round-robin assignment using dbo.RoundRobinPointer              │    │
+│  │   • Checks SME capacity (MaxConcurrentDocs) before assigning        │    │
+│  │   • Inserts into dbo.DocumentAssignment                             │    │
+│  │   • If all SMEs at capacity → document stays unassigned             │    │
+│  └────────────────────────────┬────────────────────────────────────────┘    │
+│                               │                                             │
+│                               ▼                                             │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │ STEP 8: Blob Routing                                                │    │
+│  │   • Skipped if category = Other or confidence < 70%                 │    │
+│  │   • Copies blob to classified destination folder:                   │    │
+│  │     ─ Loan      → genpact/cre_loan/                                │    │
+│  │     ─ Appraisal → genpact/cre_valuation/                           │    │
+│  │     ─ CNI       → genpact/cni/                                     │    │
+│  │   • Renames using extracted fields:                                 │    │
+│  │     ─ CRE: CRE_{RelationshipName}_CreditAgreement_{LoanDate}       │    │
+│  │     ─ Valuation: CRE_{ClientName}_ValuationReport_{ValDate}         │    │
+│  │     ─ CNI: C&I_{BorrowerName}_CreditAgreement_{AgreementDate}       │    │
+│  │   • Deletes the original from incoming-documents/                   │    │
 │  └─────────────────────────────────────────────────────────────────────┘    │
 │                                                                             │
 └─────────────────────────────────────────────────────────────────────────────┘
@@ -150,32 +177,34 @@ An Azure Functions v4 (.NET 8 isolated worker) application that classifies uploa
 │  ├── IContentUnderstandingService  (classify + extract)       │
 │  ├── IDocumentFieldExtractor       (field processing)         │
 │  ├── IDatabaseService              (SQL persistence)          │
+│  ├── IBlobRoutingService           (classified blob routing)  │
+│  ├── ISmeAssignmentService         (round-robin SME assign)   │
 │  └── BlobServiceClient             (SAS URL generation)       │
-└──────┬──────────┬──────────┬──────────┬─────────────────────┘
-       │          │          │          │
-       ▼          ▼          ▼          ▼
-┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────────────────┐
-│ Content  │ │ Document │ │ Database │ │ DocumentType         │
-│ Under-   │ │ Field    │ │ Service  │ │ Configuration        │
-│ standing │ │ Extractor│ │          │ │                      │
-│ Service  │ │          │ │          │ │ Category → DocType   │
-│          │ │          │ │          │ │ DocType → AnalyzerId │
-│ •Classify│ │ •Process │ │ •Upsert  │ └──────────────────────┘
-│ •Extract │ │  fields  │ │  Feature │
-│ •Score   │ │ •Conf.   │ │  Data    │
-│  category│ │  gating  │ │ •Insert  │
-│ •Schema  │ │ •Conf.   │ │  Data    │
-│  methods │ │ •Citation│ │  Job     │
-│ •Ensure  │ │ •Status  │ │  Details │
-│  analyzer│ │          │ │  Details │
-│  exists  │ ├──────────┤ └──────────┘
-└──────────┘ │ Citation │
-             │ Service  │
-             │          │
-             │ •Parse   │
-             │  extract │
-             │  source  │
-             │ •Compute │
+└──────┬──────────┬──────────┬──────────┬──────────┬──────────┘
+       │          │          │          │          │
+       ▼          ▼          ▼          ▼          ▼
+┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌─────────────────────┐
+│ Content  │ │ Document │ │ Database │ │ Blob     │ │ Sme Assignment      │
+│ Under-   │ │ Field    │ │ Service  │ │ Routing  │ │ Service             │
+│ standing │ │ Extractor│ │          │ │ Service  │ │                     │
+│ Service  │ │          │ │          │ │          │ │ •Round-robin        │
+│          │ │          │ │          │ │ •Copy to │ │  assignment         │
+│ •Classify│ │ •Process │ │ •Upsert  │ │  dest    │ │ •Capacity           │
+│ •Extract │ │  fields  │ │  Feature │ │  folder  │ │  checking           │
+│ •Score   │ │ •Conf.   │ │  Data    │ │ •Rename  │ │ •Pointer            │
+│  category│ │  gating  │ │ •Insert  │ │  with    │ │  update             │
+│ •Schema  │ │ •Conf.   │ │  Job     │ │  fields  │ └─────────────────────┘
+│  methods │ │ •Citation│ │  Details │ │ •Delete  │
+│ •Ensure  │ │ •Status  │ │          │ │  source  │
+│  analyzer│ │          │ └──────────┘ └──────────┘
+│  exists  │ ├──────────┤
+└──────────┘ │ Citation │ ┌──────────────────────┐
+             │ Service  │ │ DocumentType         │
+             │          │ │ Configuration        │
+             │ •Parse   │ │                      │
+             │  extract │ │ Category → DocType   │
+             │  source  │ │ DocType → AnalyzerId │
+             │ •Compute │ └──────────────────────┘
              │  generate│
              │  confid. │
              ├──────────┤
@@ -238,7 +267,21 @@ An Azure Functions v4 (.NET 8 isolated worker) application that classifies uploa
                             ┌────────▼────────┐                    
                             │  dbo.FeatureData │                    
                             │  dbo.JobDetails  │                    
-                            └─────────────────┘                    
+                            └────────┬────────┘                    
+                                     │                              
+                       ┌─────────────┼─────────────┐               
+                       │                           │               
+                       ▼                           ▼               
+              ┌─────────────────┐    ┌───────────────────────┐     
+              │ SME Assignment  │    │ Blob Routing           │     
+              │ (round-robin)   │    │ incoming-documents/ →  │     
+              │                 │    │   cre_loan/            │     
+              │ dbo.Document-   │    │   cre_valuation/       │     
+              │   Assignment    │    │   cni/                 │     
+              │ dbo.RoundRobin- │    │                        │     
+              │   Pointer       │    │ Rename with fields +   │     
+              └─────────────────┘    │ delete original        │     
+                                     └───────────────────────┘                    
 ```
 
 ---
@@ -301,6 +344,7 @@ DocClassifyExtract/
 │   ├── CitationService.cs              # Citation parsing & generate-field text matching
 │   ├── FeatureRefService.cs            # FeatureId lookup/auto-creation from SQL
 │   ├── DatabaseService.cs             # SQL upsert for FeatureData & JobDetails
+│   ├── BlobRoutingService.cs          # Routes classified blobs to destination folders
 │   └── SmeAssignmentService.cs        # Round-robin SME assignment for HITL review
 │
 ├── sql/
@@ -335,7 +379,7 @@ Fields saved to DB → Any ReviewRequired? → Yes → Read RoundRobinPointer fo
 ### Tables
 
 - **dbo.SME** — Master list of SMEs with `DocType` (CRE/C&I/Valuation), `MaxConcurrentDocs`, `IsActive`
-- **dbo.DocumentAssignment** — Assignment record: DocumentId → SmeId, Status (Assigned/Completed)
+- **dbo.DocumentAssignment** — Assignment record: DocumentId → SmeId, Status (Assigned/Completed/Reassigned)
 - **dbo.RoundRobinPointer** — One row per DocType, stores `LastAssignedSmeId`
 
 ### Assignment Logic
@@ -346,3 +390,43 @@ Fields saved to DB → Any ReviewRequired? → Yes → Read RoundRobinPointer fo
 4. Skip any SME whose current `Assigned` count ≥ `MaxConcurrentDocs`
 5. Assign and update pointer
 6. If all are at capacity, document stays unassigned (can be retried later)
+
+### Reassignment
+
+Documents can be reassigned from one SME to another via `ReassignDocumentAsync`. This supports the UI scenario where a reviewer selects a different SME from a dropdown.
+
+**Rules:**
+- Reassignment is for the **entire document**, not per-field
+- The reassignment dropdown shows **all active SMEs** for that document type (`GetAvailableSmesForDocTypeAsync`)
+- No seniority is considered — any eligible SME can be selected
+- The target SME must be active, handle the same DocType, and not be at capacity
+
+**Flow:**
+1. Find the current active assignment for the document
+2. Validate the target SME (active, correct DocType, under capacity)
+3. Mark the existing assignment as `'Reassigned'` with a completion timestamp
+4. Create a new assignment record for the target SME
+5. All steps run in a single SQL transaction (atomic)
+
+---
+
+## Blob Routing (Post-Processing)
+
+After successful extraction and DB save, the original blob is moved from the trigger folder to a classified destination folder with a descriptive filename built from extracted fields.
+
+### Routing Rules
+
+| DocumentType | Destination Folder      | Filename Pattern                                        |
+|-------------|-------------------------|---------------------------------------------------------|
+| Loan        | `genpact/cre_loan/`      | `CRE_{Relationship_Name}_CreditAgreement_{Original_Loan_Date}.pdf` |
+| Appraisal   | `genpact/cre_valuation/` | `CRE_{Client_Name}_ValuationReport_{Date_Of_Valuation}.pdf`        |
+| CNI         | `genpact/cni/`           | `C&I_{Borrower_Name}_CreditAgreement_{Agreement_Date}.pdf`         |
+
+### Behavior
+
+- Skipped entirely if the document category is `Other` or confidence score < 70%
+- Date fields are formatted as `MMddyyyy`; missing dates become `UnknownDate`
+- Missing name fields become `Unknown`
+- Invalid filename characters are replaced with hyphens
+- After successful copy, the original blob in `incoming-documents/` is deleted
+- Server-side copy is used (no data downloaded to the function)

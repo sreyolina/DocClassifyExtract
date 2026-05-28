@@ -42,7 +42,7 @@ public class ContentUnderstandingService : IContentUnderstandingService
     private const string OpenAiApiVersion = "2024-12-01-preview";
     private const string ClassifierId = "doc_classifier_cre_cni_valuation_confidence_score_other";
     private const string GptDeployment = "gpt-4.1";
-    private const int DefaultTimeoutSeconds = 300;
+    private const int DefaultTimeoutSeconds = 600;
     private const int PollingIntervalSeconds = 2;
     private const int ConfidenceThresholdPercent = 70;
     private const double PageSampleRatio = 0.20;

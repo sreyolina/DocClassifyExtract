@@ -27,7 +27,7 @@
       "Property_Address": {
         "type": "string",
         "method": "extract",
-        "description": "Full physical address of the property being appraised, including street, city, state, and ZIP code."
+        "description": "Full street address of the property being appraised, including street number and street name, city, state, and ZIP code. Look in the 'IDENTIFICATION OF THE PROPERTY' section or similar property description sections for phrases like 'known as', 'located at', or 'property address'. Must include the street-level address (e.g., '5950 Netherland Avenue, Bronx, NY'), not just the city or county."
       },
       "Client_Name": {
         "type": "string",
@@ -46,13 +46,13 @@
       },
       "Final_Value_Conclusion": {
         "type": "string",
-        "method": "extract",
-        "description": "The final appraised value or value conclusion stated in the report. Look for 'Market Value', 'As-Is Value', or 'Final Value Opinion'."
+        "method": "generate",
+        "description": "Find the final opinion of market value from the transmittal letter or cover letter at the beginning of the report. The transmittal letter typically states 'the Market Value of the subject property in its As Is condition is:' followed by the dollar amount in words and parentheses (e.g., 'Twenty Three Million Dollars ($23,000,000)'). Extract ONLY this value. Do NOT use 'VALUE VIA THE MARKET APPROACH', 'VALUE VIA THE INCOME APPROACH', or any individual valuation approach figure that appears later in the report - those are intermediate calculations. Return the dollar amount from the transmittal letter."
       },
       "Effective_Date_Of_Appraisal": {
         "type": "date",
-        "method": "extract",
-        "description": "The effective date of the appraisal, which may differ from the report date. Look for 'Effective Date', 'Date of Value', or 'Valuation Date'."
+        "method": "generate",
+        "description": "The effective date of the appraisal. This is a DERIVED value: find the date of the appraisal inspection or valuation (e.g., 'Date of Value & Property Inspection', 'as of March 20, 2001', or the appraisal date in the transmittal letter), then calculate the LAST DAY of that month. For example: if the inspection date is March 20, 2001, the effective date is 03/31/2001. If the date is 5/16/2016, the effective date is 05/31/2016. Always return the last calendar day of the month in which the appraisal was conducted, in MM/DD/YYYY format."
       },
       "Legal_Description": {
         "type": "string",
@@ -87,7 +87,7 @@
       "Flood_Zone": {
         "type": "string",
         "method": "extract",
-        "description": "Flood zone designation and any environmental considerations noted in the report."
+        "description": "Flood zone designation for the subject property. Look in the 'Summary of Salient Facts and Conclusions', 'Site Description', 'Site Analysis', or 'Neighborhood Analysis' sections. Search for labels like 'Flood Map', 'Flood Zone', or 'FEMA' followed by the zone classification (e.g., 'Zone C', 'Zone X', 'Zone A', 'Zone AE'). Also check for references to FIRM panels or community panel numbers. Return the flood zone designation (e.g., 'Zone C'). Do NOT look in Demographics or Business Diversity sections."
       },
       "Building_Size_And_Construction": {
         "type": "string",
@@ -97,7 +97,7 @@
       "Highest_And_Best_Use": {
         "type": "string",
         "method": "extract",
-        "description": "Highest and best use conclusion for the property, both as vacant and as improved."
+        "description": "The highest and best use conclusions for the property. Find the section discussing 'Highest and Best Use' and extract both the 'As Vacant' conclusion and the 'As Improved' conclusion. Return them together as: 'As Vacant: [conclusion]. As Improved: [conclusion].' If only one conclusion is present, return what is available."
       },
       "Sales_Comparison_Value": {
         "type": "string",
@@ -121,9 +121,10 @@
       },
       "USPAP_Compliance": {
         "type": "string",
-        "method": "extract",
-        "description": "Statement of compliance with Uniform Standards of Professional Appraisal Practice (USPAP)."
+        "method": "generate",
+        "description": "Determine USPAP compliance status by checking for a 'CERTIFICATION' section in the report. Look for a dedicated certification page containing statements such as 'this report has been prepared, in conformity with the Uniform Standards of Professional Appraisal Practice' or 'comply with the Uniform Standards of Professional Appraisal Practice', along with appraiser signatures. If a certification section exists with USPAP compliance statements and appraiser signature(s), return 'Certified & Signed'. If no certification section or USPAP compliance statement is found in the report, return 'No certification available'."
       }
     }
   }
 }
+  

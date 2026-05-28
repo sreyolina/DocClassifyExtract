@@ -37,12 +37,12 @@
       "Interest_Rate": {
         "type": "string",
         "method": "extract",
-        "description": "Interest rate applicable to the loan. Extract as stated - fixed or variable reference - typically labeled as 'Interest Rate', 'Applicable Rate', 'Note Rate', or 'Contract Rate'. Return percentage or reference."
+        "description": "Interest rate applicable to the loan. Extract the rate exactly as stated, including when the agreement defines the term indirectly by cross-reference, such as 'Interest Rate shall have the meaning set forth in the Note' or a similar referenced loan document. Look in definitions, the Note, pricing sections, and any cross-referenced provision to resolve the actual fixed rate, floating index plus spread, note rate, applicable rate, or contract rate. Return the actual percentage or rate formula when present; do not stop at the cross-reference text alone unless no underlying rate appears in the provided document."
       },
       "Interest_Basis_Code": {
         "type": "string",
         "method": "extract",
-        "description": "Day-count convention used for interest accrual, such as '30/360', 'Actual/360', or 'Actual/365'. Usually appears in interest calculation sections. Return only the convention format."
+        "description": "Day-count convention used for interest accrual, such as '30/360', 'Actual/360', or 'Actual/365'. Extract it even when the agreement defines the interest basis indirectly by cross-reference, such as referring to the Note, interest calculation provisions, or a defined term rather than stating the convention inline. Also look for equivalent phrasing like 'day-count convention', 'interest basis', 'year basis', 'computed on the basis of', or 'calculated on the basis of a 360-day year'. Resolve the actual convention from the referenced provision and return only the convention format, normalized when needed to values like '30/360', 'Actual/360', or 'Actual/365'."
       },
       "Maturity_Date": {
         "type": "date",
@@ -57,7 +57,7 @@
       "First_Payment_Due_Date": {
         "type": "string",
         "method": "extract",
-        "description": "Date on which the first scheduled payment is due. Identified in payment schedule sections using terms such as 'first installment due', 'initial payment date', or 'commencing on'. Return the date only."
+        "description": "Date or payment-date rule for when scheduled loan payments begin. Extract this even when the agreement states it as a recurring schedule or relative timing rather than a specific calendar date, such as 'Payment Date', 'first installment due', 'initial payment date', 'commencing on', or similar language in tables, term sheets, or payment schedule sections. If an explicit first payment date is stated, return that date. If the document instead provides a recurring payment-date rule tied to another event or date, return that payment-date phrase exactly as stated."
       },
       "Payment_Frequency": {
         "type": "string",
@@ -67,7 +67,7 @@
       "Accrual_Start_Date": {
         "type": "string",
         "method": "extract",
-        "description": "The date on which interest begins accruing. Look for terms such as 'Interest shall begin to accrue on', 'Accrual Start Date'. Return the date as written."
+        "description": "Date or accrual-start rule for when interest begins to accrue. Extract this even when the agreement states it indirectly through definitions or relative timing, such as 'Interest shall begin to accrue on', 'Accrual Start Date', 'Accrual Period', 'commencing on and including', 'the Closing Date', or similar language in definitions, payment provisions, or interest calculation sections. If an explicit accrual start date is stated, return that date as written. If the document instead defines accrual commencement relative to another date or event, return the accrual-start phrase exactly as stated, such as 'commencing on and including the Closing Date'."
       },
       "Loan_Type": {
         "type": "string",
