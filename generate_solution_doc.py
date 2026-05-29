@@ -3,6 +3,164 @@ from docx.shared import Pt, Inches, Cm, RGBColor
 from docx.enum.text import WD_ALIGN_PARAGRAPH
 from docx.enum.table import WD_TABLE_ALIGNMENT
 from docx.oxml.ns import qn
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
+from matplotlib.patches import FancyBboxPatch, FancyArrowPatch
+import os
+
+# ─── Generate Flow Diagram Image ─────────────────────────────────────────────
+def generate_flow_diagram():
+    """Creates a formal, monochrome corporate-style flow diagram for client presentation."""
+    fig, ax = plt.subplots(1, 1, figsize=(11, 15))
+    ax.set_xlim(0, 11)
+    ax.set_ylim(0, 15)
+    ax.axis('off')
+    fig.patch.set_facecolor('white')
+
+    # Formal color scheme — lighter tones for readability
+    NAVY = '#4A6FA5'
+    SLATE = '#5B7FAD'
+    CHARCOAL = '#4A4A4A'
+    LIGHT_GRAY = '#F0F4F8'
+    BORDER = '#3D5A80'
+    DECISION_BG = '#FFFFFF'
+    STOP_BG = '#FFFFFF'
+
+    def draw_box(x, y, w, h, title, subtitle='', fontsize=11, style='round', filled=True):
+        if style == 'diamond':
+            diamond = plt.Polygon([[x+w/2, y+h], [x+w, y+h/2], [x+w/2, y], [x, y+h/2]],
+                                  closed=True, facecolor=DECISION_BG, edgecolor=BORDER, linewidth=1.5)
+            ax.add_patch(diamond)
+            ax.text(x + w/2, y + h/2 + 0.1, title, ha='center', va='center',
+                    fontsize=fontsize, color=NAVY, fontweight='bold', linespacing=1.3)
+            if subtitle:
+                ax.text(x + w/2, y + h/2 - 0.22, subtitle, ha='center', va='center',
+                        fontsize=fontsize, color=CHARCOAL, fontweight='bold', linespacing=1.2)
+        else:
+            if filled:
+                box = FancyBboxPatch((x, y), w, h, boxstyle="round,pad=0.04",
+                                     facecolor=NAVY, edgecolor=BORDER, linewidth=1.3)
+                ax.add_patch(box)
+                text_color = 'white'
+            else:
+                box = FancyBboxPatch((x, y), w, h, boxstyle="round,pad=0.04",
+                                     facecolor=LIGHT_GRAY, edgecolor=BORDER, linewidth=1.3)
+                ax.add_patch(box)
+                text_color = NAVY
+            if subtitle:
+                ax.text(x + w/2, y + h/2 + 0.15, title, ha='center', va='center',
+                        fontsize=fontsize, color=text_color, fontweight='bold', linespacing=1.3)
+                ax.text(x + w/2, y + h/2 - 0.18, subtitle, ha='center', va='center',
+                        fontsize=fontsize, color=text_color if filled else CHARCOAL,
+                        fontweight='bold', linespacing=1.2)
+            else:
+                ax.text(x + w/2, y + h/2, title, ha='center', va='center',
+                        fontsize=fontsize, color=text_color, fontweight='bold',
+                        linespacing=1.3)
+
+    def draw_arrow(x1, y1, x2, y2, label='', label_side='right'):
+        ax.annotate('', xy=(x2, y2), xytext=(x1, y1),
+                    arrowprops=dict(arrowstyle='->', color=CHARCOAL, lw=1.5,
+                                    connectionstyle='arc3,rad=0'))
+        if label:
+            mx, my = (x1+x2)/2, (y1+y2)/2
+            offset = 0.15 if label_side == 'right' else -0.15
+            ax.text(mx + offset, my + 0.05, label, fontsize=9, color=CHARCOAL,
+                    fontweight='bold', ha='center')
+
+    # ── Title ──
+    ax.text(5.5, 14.5, 'Document Classification & Extraction Pipeline', ha='center',
+            fontsize=17, fontweight='bold', color=NAVY, fontfamily='sans-serif')
+    ax.text(5.5, 14.05, 'End-to-End Processing Flow', ha='center',
+            fontsize=12, color=SLATE, fontfamily='sans-serif')
+
+    # Thin separator line
+    ax.plot([2, 9], [13.9, 13.9], color=SLATE, linewidth=0.5, alpha=0.5)
+
+    # ── Step 1: Document Ingestion ──
+    draw_box(2.5, 13.0, 6, 0.7, 'Document Ingestion',
+             'PDF upload to Azure Blob Storage\ngenpact/incoming-documents/{name}')
+    draw_arrow(5.5, 13.0, 5.5, 12.6)
+
+    # ── Step 2: Event Trigger ──
+    draw_box(2.5, 11.8, 6, 0.7, 'Event Trigger',
+             'Azure Function  •  ClassifyAndExtract (Blob Trigger)')
+    draw_arrow(5.5, 11.8, 5.5, 11.4)
+
+    # ── Step 3: Classification ──
+    draw_box(2.5, 10.5, 6, 0.8, 'Document Classification',
+             'Azure AI Content Understanding\ndoc_classifier_cre_cni_valuation_confidence_score_other')
+    draw_arrow(5.5, 10.5, 5.5, 10.1)
+
+    # ── Step 4: LLM Validation ──
+    draw_box(2.5, 9.2, 6, 0.8, 'Classification Validation',
+             'GPT-4.1 LLM Verification\n20% page sampling  •  Indicator matching')
+    draw_arrow(5.5, 9.2, 5.5, 8.7)
+
+    # ── Step 5: Decision Gate ──
+    draw_box(3.5, 7.6, 4, 1.0, 'Confidence \u2265 70%', 'Category \u2260 Other', fontsize=11, style='diamond')
+
+    # NO branch (right)
+    draw_arrow(7.5, 8.1, 9.2, 8.1, label='NO', label_side='right')
+    draw_box(8.8, 7.8, 2.0, 0.6, 'Human Review', 'Manual classification required',
+             fontsize=9.5, filled=False)
+
+    # YES branch (down)
+    draw_arrow(5.5, 7.6, 5.5, 7.15)
+    ax.text(5.8, 7.35, 'YES', fontsize=10, color=NAVY, fontweight='bold')
+
+    # ── Step 6: Field Extraction ──
+    draw_box(2.0, 6.3, 7, 0.75, 'Field Extraction',
+             'Schema-driven analysis per document type\nCRE \u2192 cre_loan  |  Valuation \u2192 appraisal_report  |  CNI \u2192 cni_agreement',
+             fontsize=10)
+    draw_arrow(5.5, 6.3, 5.5, 5.9)
+
+    # ── Step 7: Processing & Enrichment ──
+    draw_box(2.0, 5.1, 7, 0.7, 'Field Processing & Enrichment',
+             'Extract/Generate methods  •  Citation linking  •  Confidence scoring')
+    draw_arrow(5.5, 5.1, 5.5, 4.7)
+
+    # ── Step 8: Data Persistence ──
+    draw_box(2.5, 3.9, 6, 0.7, 'Data Persistence',
+             'Azure SQL Server\ndbo.FeatureData (MERGE)  •  dbo.JobDetails')
+    draw_arrow(5.5, 3.9, 5.5, 3.5)
+
+    # Branch lines
+    draw_arrow(5.5, 3.5, 3.5, 3.0)
+    draw_arrow(5.5, 3.5, 7.5, 3.0)
+
+    # ── Step 9: SME Assignment ──
+    draw_box(1.5, 2.15, 3.5, 0.75, 'SME Assignment',
+             'Round-robin  •  Capacity check\ndbo.DocumentAssignment', fontsize=9.5)
+    ax.text(3.25, 3.1, 'If review required', fontsize=8, color=CHARCOAL, ha='center',
+            style='italic')
+
+    # ── Step 10: Blob Routing ──
+    draw_box(6.0, 2.15, 3.5, 0.75, 'Blob Routing',
+             'cre_loan/  •  cre_valuation/  •  cni/\nRename \u2192 Delete original', fontsize=9.5)
+    ax.text(7.75, 3.1, 'On successful processing', fontsize=8, color=CHARCOAL, ha='center',
+            style='italic')
+
+    # ── Completion ──
+    draw_arrow(3.25, 2.15, 5.0, 1.5)
+    draw_arrow(7.75, 2.15, 6.0, 1.5)
+    draw_box(3.75, 0.9, 3.5, 0.55, 'Processing Complete', fontsize=11)
+
+    # ── Minimal legend (no colored boxes — just labeled shapes) ──
+    ax.plot([1.5, 9.5], [0.55, 0.55], color=SLATE, linewidth=0.3, alpha=0.4)
+    legend_text = 'Rectangle = Process Step     Diamond = Decision Gate     Arrow = Data Flow'
+    ax.text(5.5, 0.25, legend_text, ha='center', fontsize=9, color=CHARCOAL,
+            fontfamily='sans-serif')
+
+    plt.tight_layout()
+    img_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data_flow_diagram.png')
+    plt.savefig(img_path, dpi=200, bbox_inches='tight', facecolor='white')
+    plt.close()
+    return img_path
+
+flow_diagram_path = generate_flow_diagram()
 
 doc = Document()
 
@@ -42,16 +200,16 @@ doc.add_page_break()
 # ─── Table of Contents ────────────────────────────────────────────────────────
 doc.add_heading('Table of Contents', level=1)
 toc_items = [
-    '1. Solution Overview',
-    '2. Architecture & Services',
-    '3. Document Classification Pipeline',
-    '4. GPT-4.1 Confidence Scoring',
-    '5. Field Extraction',
-    '6. Database Persistence',
-    '7. SME Assignment (Human-in-the-Loop)',
-    '8. Blob Routing & File Organization',
-    '9. Document Categories & Indicators',
-    '10. End-to-End Flow Diagram',
+    '1. End-to-End Data Flow Diagram',
+    '2. Solution Overview',
+    '3. Architecture & Services',
+    '4. Document Classification Pipeline',
+    '5. GPT-4.1 Confidence Scoring',
+    '6. Field Extraction',
+    '7. Database Persistence',
+    '8. SME Assignment (Human-in-the-Loop)',
+    '9. Blob Routing & File Organization',
+    '10. Document Categories & Indicators',
     '11. Technology Stack',
 ]
 for item in toc_items:
@@ -59,8 +217,38 @@ for item in toc_items:
 
 doc.add_page_break()
 
+# ─── 1. End-to-End Data Flow Diagram ──────────────────────────────────────────
+doc.add_heading('1. End-to-End Data Flow Diagram', level=1)
+
+# Insert the generated flow diagram image
+doc.add_picture(flow_diagram_path, width=Inches(7.0))
+last_paragraph = doc.paragraphs[-1]
+last_paragraph.alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+doc.add_paragraph()
+
+# Crisp summary for business audience
+doc.add_heading('How It Works', level=2)
+
+summary_points = [
+    ('1. Upload', 'Drop a PDF into Azure Blob Storage — processing starts automatically.'),
+    ('2. Classify', 'Azure AI identifies the document type: CRE Loan, Valuation Report, or C&I Agreement.'),
+    ('3. Validate', 'GPT-4.1 confirms the classification with a confidence score. Documents below 70% are flagged for human review.'),
+    ('4. Extract', 'AI extracts key fields (dates, names, amounts, terms) with page-level citations showing exactly where each value was found.'),
+    ('5. Store', 'All extracted data is saved to Azure SQL with full audit trail.'),
+    ('6. Assign', 'Documents needing review are automatically assigned to the right SME via round-robin.'),
+    ('7. Route', 'The PDF is moved to an organized folder and renamed for easy identification.'),
+]
+
+for title, desc in summary_points:
+    p = doc.add_paragraph()
+    p.add_run(f'{title}: ').bold = True
+    p.add_run(desc)
+
+doc.add_page_break()
+
 # ─── 1. Solution Overview ────────────────────────────────────────────────────
-doc.add_heading('1. Solution Overview', level=1)
+doc.add_heading('2. Solution Overview', level=1)
 
 doc.add_paragraph(
     'This solution provides an end-to-end intelligent document processing pipeline that automatically '
@@ -85,8 +273,8 @@ for cap in capabilities:
 
 doc.add_page_break()
 
-# ─── 2. Architecture & Services ──────────────────────────────────────────────
-doc.add_heading('2. Architecture & Services', level=1)
+# ─── 3. Architecture & Services ────────────────────────────────────────
+doc.add_heading('3. Architecture & Services', level=1)
 
 doc.add_paragraph(
     'The solution is built as an Azure Function triggered by blob uploads. It orchestrates '
@@ -132,8 +320,8 @@ p.add_run('PDF, DOCX, and other document formats')
 
 doc.add_page_break()
 
-# ─── 3. Document Classification Pipeline ─────────────────────────────────────
-doc.add_heading('3. Document Classification Pipeline', level=1)
+# ─── 4. Document Classification Pipeline ───────────────────────────────
+doc.add_heading('4. Document Classification Pipeline', level=1)
 
 doc.add_heading('Step 1: Classifier Provisioning', level=2)
 doc.add_paragraph(
@@ -178,8 +366,8 @@ for r in results:
 
 doc.add_page_break()
 
-# ─── 4. GPT-4.1 Confidence Scoring ──────────────────────────────────────────
-doc.add_heading('4. GPT-4.1 Confidence Scoring', level=1)
+# ─── 5. GPT-4.1 Confidence Scoring ────────────────────────────────────
+doc.add_heading('5. GPT-4.1 Confidence Scoring', level=1)
 
 doc.add_paragraph(
     'After the initial classification, the system performs a second-level validation using GPT-4.1. '
@@ -238,7 +426,7 @@ for f in gpt_fields:
 doc.add_page_break()
 
 # ─── 5. Field Extraction ─────────────────────────────────────────────────────
-doc.add_heading('5. Field Extraction', level=1)
+doc.add_heading('6. Field Extraction', level=1)
 
 doc.add_paragraph(
     'After classification passes the confidence threshold, the system extracts structured fields '
@@ -288,7 +476,7 @@ for c in citation_fields:
 doc.add_page_break()
 
 # ─── 6. Database Persistence ─────────────────────────────────────────────────
-doc.add_heading('6. Database Persistence', level=1)
+doc.add_heading('7. Database Persistence', level=1)
 
 doc.add_paragraph(
     'All extracted data is persisted to Azure SQL Server using MERGE (upsert) operations.'
@@ -325,7 +513,7 @@ for f in job_fields:
 doc.add_page_break()
 
 # ─── 7. SME Assignment ───────────────────────────────────────────────────────
-doc.add_heading('7. SME Assignment (Human-in-the-Loop)', level=1)
+doc.add_heading('8. SME Assignment (Human-in-the-Loop)', level=1)
 
 doc.add_paragraph(
     'When extracted fields require human review (confidence < 0.5), the document is automatically '
@@ -361,7 +549,7 @@ for case in intervention_cases:
 doc.add_page_break()
 
 # ─── 8. Blob Routing ─────────────────────────────────────────────────────────
-doc.add_heading('8. Blob Routing & File Organization', level=1)
+doc.add_heading('9. Blob Routing & File Organization', level=1)
 
 doc.add_paragraph(
     'After successful processing, documents are automatically moved from the intake folder '
@@ -400,8 +588,8 @@ for case in skip_cases:
 
 doc.add_page_break()
 
-# ─── 9. Document Categories & Indicators ─────────────────────────────────────
-doc.add_heading('9. Document Categories & Indicators', level=1)
+# ─── 10. Document Categories & Indicators ───────────────────────────────
+doc.add_heading('10. Document Categories & Indicators', level=1)
 
 doc.add_heading('Valuation (Appraisal Reports)', level=2)
 doc.add_paragraph(
@@ -468,52 +656,6 @@ doc.add_paragraph(
     'Documents that do not clearly fall into CRE, CNI, or Valuation. These are automatically '
     'flagged for human intervention with no extraction performed.'
 )
-
-doc.add_page_break()
-
-# ─── 10. End-to-End Flow Diagram ─────────────────────────────────────────────
-doc.add_heading('10. End-to-End Flow Diagram', level=1)
-
-doc.add_paragraph(
-    'The following describes the complete processing pipeline from document upload to final storage:'
-)
-
-flow_steps = [
-    ('Step 1: Upload', 'Document is uploaded to Azure Blob Storage (genpact/incoming-documents/)'),
-    ('Step 2: Trigger', 'Azure Function is automatically triggered by the blob upload event'),
-    ('Step 3: Classify', 'Document is submitted to Azure Content Understanding classifier API'),
-    ('Step 4: Parse Results', 'Classification returns category (CRE/CNI/Valuation/Other) + native confidence per segment'),
-    ('Step 5: GPT Validation', 'GPT-4.1 validates each segment\'s classification by analyzing document indicators'),
-    ('Step 6: Confidence Gate', 'If GPT score ≥ 70%: proceed | If < 70% or "Other": flag for human intervention'),
-    ('Step 7: Extract Fields', 'Document is sent to the appropriate extraction analyzer (per document type)'),
-    ('Step 8: Parse & Enrich', 'Raw extraction results are parsed into structured fields with citations and confidence'),
-    ('Step 9: Save to DB', 'All fields and job metadata are persisted to Azure SQL Server'),
-    ('Step 10: SME Assignment', 'If any field needs HITL review, document is assigned to an SME via round-robin'),
-    ('Step 11: Route Blob', 'Document is moved from incoming-documents/ to the classified folder'),
-    ('Step 12: Complete', 'Processing complete — full audit trail available in database'),
-]
-
-for step_title, step_desc in flow_steps:
-    p = doc.add_paragraph()
-    p.add_run(f'{step_title}: ').bold = True
-    p.add_run(step_desc)
-
-doc.add_paragraph()
-doc.add_heading('Decision Points', level=2)
-
-decision_table = doc.add_table(rows=4, cols=3)
-decision_table.style = 'Medium Shading 1 Accent 1'
-decision_table.rows[0].cells[0].text = 'Decision'
-decision_table.rows[0].cells[1].text = 'Condition'
-decision_table.rows[0].cells[2].text = 'Action'
-decisions = [
-    ['Category = "Other"', 'Classifier assigns unknown category', 'Skip extraction → Human intervention'],
-    ['GPT Score < 70%', 'Low confidence in classification', 'Skip extraction → Human intervention'],
-    ['Field Confidence < 0.5', 'Extracted value uncertain', 'Flag field for HITL review, assign to SME'],
-]
-for row_idx, row_data in enumerate(decisions, start=1):
-    for col_idx, cell_data in enumerate(row_data):
-        decision_table.rows[row_idx].cells[col_idx].text = cell_data
 
 doc.add_page_break()
 
